@@ -14,8 +14,8 @@ const getGeminiClient = () => {
 
 async function getAIResponse(prompt) {
   const client = getGeminiClient();
-  // Use gemini-pro (stable, free, widely available)
-  const model = client.getGenerativeModel({ model: 'gemini-pro' });
+  // gemini-2.0-flash: current free-tier model (2026)
+  const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
   const result = await model.generateContent(prompt);
   return result.response.text();
 }
