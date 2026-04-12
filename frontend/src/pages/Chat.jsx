@@ -68,7 +68,8 @@ const Chat = () => {
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {
       console.error(err);
-      setError('Message failed. Please try again.');
+      const errMsg = err.response?.data?.message || err.message || 'Message failed. Please try again.';
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
