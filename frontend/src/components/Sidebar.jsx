@@ -1,71 +1,149 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MessageCircle, Heart, User, Settings, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  LayoutDashboard, MessageCircle, Heart, User,
+  Settings, LogOut, Mic, X, ChevronRight, Sparkles
+} from 'lucide-react';
 
-const Sidebar = () => {
+const navItems = [
+  { name: 'Dashboard',       path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Memory Chat',     path: '/chat',       icon: MessageCircle },
+  { name: 'Memories',        path: '/memories',   icon: Heart },
+  { name: 'Loved One',       path: '/profile',    icon: User },
+  { name: 'Voice Notes',     path: '/voice',      icon: Mic },
+  { name: 'Settings',        path: '/settings',   icon: Settings },
+];
+
+const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'Memory Chat', path: '/chat', icon: <MessageCircle size={20} /> },
-    { name: 'Memories', path: '/memories', icon: <Heart size={20} /> },
-    { name: 'Profile', path: '/profile', icon: <User size={20} /> },
-    { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
-  ];
-
   const handleLogout = () => {
     localStorage.removeItem('user');
-    navigate('/login');
+    navigate('/');
   };
 
-  return (
-    <div className="w-64 min-h-screen glass flex flex-col border-r border-white/10 p-4">
-      <div className="flex items-center gap-3 px-2 py-6">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-          <Heart className="text-white fill-white" size={24} />
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Brand */}
+      <div className="flex items-center justify-between px-5 py-6">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 animate-glow-pulse">
+            <Heart size={18} className="text-white fill-white" />
+          </div>
+          <div>
+            <span className="font-bold text-base gradient-text leading-none">AI Memory</span>
+            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Companion</p>
+          </div>
         </div>
-        <h1 className="font-bold text-xl tracking-tight gradient-text">AI Memory</h1>
+        {/* Mobile close */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 mt-6 flex flex-col gap-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => `
-              flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300
-              ${isActive 
-                ? 'bg-primary/20 text-primary border border-primary/20 shadow-lg shadow-primary/5' 
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+      {/* Divider */}
+      <div className="mx-5 mb-4 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 flex flex-col gap-1 overflow-y-auto">
+        <p className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold px-3 mb-2">Navigation</p>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={onClose}
+              className={({ isActive }) =>
+                [
+                  'flex items-center justify-between px-3.5 py-3 rounded-2xl transition-all duration-200 group',
+                  isActive
+                    ? 'nav-active'
+                    : 'text-gray-500 hover:text-gray-200 hover:bg-white/5',
+                ].join(' ')
               }
-            `}
-          >
-            {item.icon}
-            <span className="font-medium">{item.name}</span>
-          </NavLink>
-        ))}
+            >
+              {({ isActive }) => (
+                <>
+                  <div className="flex items-center gap-3">
+                    <Icon size={18} className={isActive ? 'text-primary' : 'group-hover:text-gray-300'} />
+                    <span className="font-medium text-sm">{item.name}</span>
+                  </div>
+                  {isActive && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
-      <div className="mt-auto border-t border-white/10 pt-4 flex flex-col gap-4">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-            {user?.name?.[0] || 'U'}
+      {/* Bottom Section */}
+      <div className="px-3 pb-4 mt-4">
+        <div className="mx-2 mb-4 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
+
+        {/* User card */}
+        <div className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-white/4 border border-white/6 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/60 to-indigo/60 flex items-center justify-center text-white font-bold text-sm shadow-md">
+            {user?.name?.[0]?.toUpperCase() || 'U'}
           </div>
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-medium text-white truncate">{user?.name}</span>
-            <span className="text-xs text-gray-500 truncate">{user?.email}</span>
+          <div className="flex-1 overflow-hidden">
+            <p className="text-sm font-semibold text-white truncate">{user?.name || 'User'}</p>
+            <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
           </div>
+          <Sparkles size={14} className="text-primary/60 shrink-0" />
         </div>
+
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300"
+          className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-gray-500 hover:text-red-400 hover:bg-red-500/8 transition-all duration-200 text-sm font-medium"
         >
-          <LogOut size={20} />
-          <span className="font-medium">Logout</span>
+          <LogOut size={18} />
+          <span>Sign Out</span>
         </button>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 shrink-0 h-screen sticky top-0 glass-dark border-r border-white/6 flex-col">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 bottom-0 w-72 glass-dark border-r border-white/6 z-50 md:hidden flex flex-col"
+            >
+              <SidebarContent />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

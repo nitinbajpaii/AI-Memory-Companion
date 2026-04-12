@@ -1,153 +1,432 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Heart, Shield, Sparkles, Zap, MessageCircle } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import {
+  Heart, Shield, Sparkles, Zap, MessageCircle, Star, ChevronRight,
+  ArrowRight, Mic, Lock, Brain, Menu, X, Clock, Users
+} from 'lucide-react';
 import Button from '../components/Button';
 
-const Landing = () => {
+/* ──── DATA ──── */
+const features = [
+  { icon: Brain,       color: 'text-violet-400', bg: 'bg-violet-500/10',  title: 'Emotionally Aware AI',      desc: 'Our AI reads context and adjusts its tone to provide warmth exactly when you need it.' },
+  { icon: Shield,      color: 'text-blue-400',   bg: 'bg-blue-500/10',    title: 'Privacy First',              desc: 'Military-grade encryption keeps your memories and data strictly confidential.' },
+  { icon: Mic,         color: 'text-rose-400',   bg: 'bg-rose-500/10',    title: 'Voice Interactions',         desc: 'Speak naturally. Upload audio messages and let AI listen and respond with empathy.' },
+  { icon: Heart,       color: 'text-pink-400',   bg: 'bg-pink-500/10',    title: 'Safe Grief Healing',         desc: 'Healthy boundaries guide every conversation, encouraging real-world connections.' },
+  { icon: Lock,        color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Secure Cloud Memories',     desc: 'All memories are encrypted and backed up so they are never lost.' },
+  { icon: Sparkles,    color: 'text-amber-400',  bg: 'bg-amber-500/10',   title: 'Memory Personalization',     desc: 'The more you share, the more the AI understands and honors your loved one.' },
+];
+
+const steps = [
+  { n: '01', title: 'Create a Memorial Profile', desc: 'Upload photos, describe personality traits, and share memories to personalise the experience.' },
+  { n: '02', title: 'Add Your Memories',          desc: 'Document cherished moments, favorite quotes, and stories so the AI can understand your bond.' },
+  { n: '03', title: 'Start a Conversation',        desc: 'Chat, share a voice note, or revisit memories anytime. The AI is always ready to listen.' },
+];
+
+const testimonials = [
+  { name: 'Sarah M.',      role: 'Lost her mother last year',    rating: 5, quote: 'AI Memory Companion gave me a safe space to grieve. It felt like talking to someone who truly understood my pain.' },
+  { name: 'James T.',      role: 'Remembering his grandfather',  rating: 5, quote: 'Sharing memories of Grandpa with the AI brought so much comfort. It helps me keep his spirit alive every day.' },
+  { name: 'Priya K.',      role: 'Processing loss of a friend',  rating: 5, quote: 'I was skeptical at first, but the emotional depth surprised me. It never felt robotic — always warm and human.' },
+];
+
+/* ──── NAVBAR ──── */
+const LandingNav = () => {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white selection:bg-primary/30 selection:text-primary overflow-x-hidden">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Heart className="text-primary fill-primary" size={24} />
-          <span className="font-bold text-xl gradient-text">AI Memory Companion</span>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-dark border-b border-white/6 shadow-lg shadow-black/20' : 'bg-transparent'}`}>
+      <div className="max-w-7xl mx-auto px-6 md:px-8 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
+            <Heart size={16} className="text-white fill-white" />
+          </div>
+          <span className="font-bold text-base gradient-text">AI Memory Companion</span>
+        </Link>
+
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center gap-8 text-sm font-medium">
+          {['#features', '#how-it-works', '#testimonials', '#about'].map((href, i) => (
+            <a key={href} href={href} className="text-gray-400 hover:text-white transition-colors">
+              {['Features', 'How It Works', 'Testimonials', 'About'][i]}
+            </a>
+          ))}
         </div>
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#mission" className="hover:text-white transition-colors">Mission</a>
-          <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link to="/login" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Login</Link>
+
+        <div className="hidden md:flex items-center gap-3">
+          <Link to="/login" className="text-sm font-medium text-gray-400 hover:text-white transition-colors px-3 py-1.5">Login</Link>
           <Link to="/signup">
-            <Button>Get Started</Button>
+            <Button size="sm" className="shadow-lg shadow-primary/20">Get Started <ArrowRight size={14} /></Button>
           </Link>
         </div>
-      </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-40 pb-20 px-8 overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 blur-[120px] rounded-full -z-10"></div>
-        
-        <div className="max-w-6xl mx-auto text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-6">
-              Emotionally Intelligent AI
-            </span>
-            <h1 className="text-6xl md:text-7xl font-bold tracking-tight mb-8 leading-[1.1]">
-              Heal with <span className="gradient-text">Memories</span>,<br />
-              Supported by AI.
-            </h1>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-              AI Memory Companion is your emotionally intelligent space to honor loved ones, 
-              manage memories, and find comfort through AI-driven healing.
-            </p>
-            <div className="flex items-center justify-center gap-6">
-              <Link to="/signup">
-                <Button className="h-14 px-10 text-lg">Create a Memorial</Button>
-              </Link>
-              <Button variant="secondary" className="h-14 px-10 text-lg border border-white/10">
-                Learn More
-              </Button>
-            </div>
-          </motion.div>
+        {/* Mobile toggle */}
+        <button onClick={() => setMobileOpen(p => !p)} className="md:hidden w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-gray-400">
+          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+      </div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="mt-20 relative"
-          >
-            <div className="relative mx-auto max-w-5xl rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-primary/20 glass p-4">
-               <div className="bg-[#1e293b] rounded-2xl w-full aspect-video flex items-center justify-center overflow-hidden">
-                  <img 
-                    src="https://images.unsplash.com/photo-1516110833967-0b5716ca1387?auto=format&fit=crop&q=80&w=1600" 
-                    alt="App Preview" 
-                    className="w-full h-full object-cover opacity-60"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent"></div>
-                  <div className="absolute bottom-10 left-10 text-left">
-                    <div className="glass p-6 rounded-2xl border border-white/20 max-w-md shadow-2xl">
-                      <div className="flex gap-4 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                          <MessageCircle size={20} className="text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-white mb-1">Remembering Grandma...</p>
-                          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <div className="w-[70%] h-full bg-primary"></div>
-                          </div>
-                        </div>
+      {/* Mobile Menu */}
+      {mobileOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:hidden glass-dark border-t border-white/6 px-6 py-6 space-y-4"
+        >
+          {['#features', '#how-it-works', '#testimonials', '#about'].map((href, i) => (
+            <a key={href} href={href} onClick={() => setMobileOpen(false)} className="block text-gray-400 hover:text-white transition-colors py-2">
+              {['Features', 'How It Works', 'Testimonials', 'About'][i]}
+            </a>
+          ))}
+          <div className="flex gap-3 pt-2">
+            <Link to="/login" className="flex-1"><Button variant="secondary" size="sm" className="w-full">Login</Button></Link>
+            <Link to="/signup" className="flex-1"><Button size="sm" className="w-full">Sign Up</Button></Link>
+          </div>
+        </motion.div>
+      )}
+    </nav>
+  );
+};
+
+/* ──── MAIN PAGE ──── */
+const Landing = () => {
+  return (
+    <div className="min-h-screen bg-dark text-white overflow-x-hidden">
+      <LandingNav />
+
+      {/* ═══════════ HERO ═══════════ */}
+      <section className="relative min-h-screen flex items-center pt-16 overflow-hidden hero-mesh">
+        {/* Glow blobs */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/15 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-indigo/10 blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-6 md:px-8 py-20 md:py-32 w-full">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left */}
+            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }}>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-8"
+              >
+                <Sparkles size={12} /> Emotionally Intelligent AI
+              </motion.div>
+
+              <h1 className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.08] tracking-tight mb-6">
+                Preserve <span className="gradient-text">Memories</span>.<br />
+                Heal with <span className="gradient-text-warm">Warmth</span>.
+              </h1>
+
+              <p className="text-lg text-gray-400 leading-relaxed mb-10 max-w-lg">
+                AI Memory Companion is your emotionally intelligent space to honor loved ones,
+                manage cherished memories, and find comfort through AI-driven healing conversations.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <Link to="/signup">
+                  <Button size="lg" className="shadow-xl shadow-primary/25 group">
+                    Create a Memorial <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <a href="#how-it-works">
+                  <Button variant="secondary" size="lg">
+                    See How It Works
+                  </Button>
+                </a>
+              </div>
+
+              {/* Trust badges */}
+              <div className="flex flex-wrap items-center gap-6 mt-10 pt-10 border-t border-white/6">
+                {[
+                  { icon: Users, label: '10,000+ families' },
+                  { icon: Shield, label: 'End-to-end encrypted' },
+                  { icon: Heart, label: 'Ethically guided' },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex items-center gap-2 text-sm text-gray-500">
+                    <Icon size={14} className="text-primary" />
+                    {label}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Right – Animated chat preview */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="relative hidden lg:block"
+            >
+              <div className="relative animate-float">
+                {/* Main card */}
+                <div className="glass-card rounded-3xl border border-white/8 shadow-2xl shadow-black/50 overflow-hidden glow-primary-sm">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 p-5 border-b border-white/6">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
+                      <Heart size={18} className="text-white fill-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">Grandma Rose</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[11px] text-gray-500">AI Companion active</span>
                       </div>
-                      <p className="text-gray-400 text-sm italic">"She always said, 'Love is the only thing that travels through time.'"</p>
                     </div>
                   </div>
-               </div>
-            </div>
-          </motion.div>
+
+                  {/* Messages */}
+                  <div className="p-5 space-y-4">
+                    {[
+                      { role: 'user', msg: "I miss her so much today…" },
+                      { role: 'ai',   msg: "She loved you deeply. Want to share a favorite memory of her?" },
+                      { role: 'user', msg: "She always made apple pie on Sundays." },
+                      { role: 'ai',   msg: "That warmth and love she put into those moments lives on in you. ❤️" },
+                    ].map((m, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 + i * 0.15 }}
+                        className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                          m.role === 'user'
+                            ? 'bg-gradient-to-br from-primary to-indigo text-white rounded-br-sm'
+                            : 'glass-light border border-white/8 text-gray-200 rounded-bl-sm'
+                        }`}>
+                          {m.msg}
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {/* Typing indicator */}
+                    <motion.div
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
+                      className="flex justify-start"
+                    >
+                      <div className="glass-light border border-white/8 px-4 py-3 rounded-2xl rounded-bl-sm">
+                        <div className="flex gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-primary/60 typing-dot" />
+                          <span className="w-2 h-2 rounded-full bg-primary/60 typing-dot" />
+                          <span className="w-2 h-2 rounded-full bg-primary/60 typing-dot" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* Floating stat cards */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }}
+                  className="absolute -left-12 top-1/4 glass-card rounded-2xl border border-white/8 p-4 shadow-xl"
+                >
+                  <p className="text-2xl font-black text-white mb-0.5">2,847</p>
+                  <p className="text-xs text-gray-500 font-medium">Memories preserved</p>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.0 }}
+                  className="absolute -right-12 bottom-1/4 glass-card rounded-2xl border border-white/8 p-4 shadow-xl"
+                >
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {[...Array(5)].map((_, i) => <Star key={i} size={10} className="text-amber-400 fill-amber-400" />)}
+                  </div>
+                  <p className="text-xs text-gray-500 font-medium">Loved by families</p>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 px-8 bg-[#0f172a] relative">
+      {/* ═══════════ FEATURES ═══════════ */}
+      <section id="features" className="py-24 md:py-32 px-6 md:px-8 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/3 to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold mb-4">Designed for Healing</h2>
-            <p className="text-gray-400 max-w-xl mx-auto">Our tools are built with empathy and respect for your journey.</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">Features</span>
+            <h2 className="text-4xl md:text-5xl font-black mb-4">Designed for Healing</h2>
+            <p className="text-gray-400 text-lg max-w-xl mx-auto">Every feature is built with empathy, respect, and care for your emotional journey.</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                  whileHover={{ y: -6 }}
+                  className="glass-card rounded-3xl border border-white/6 p-8 hover:border-primary/20 transition-all duration-300 hover-card group"
+                >
+                  <div className={`w-14 h-14 rounded-2xl ${f.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon size={26} className={f.color} />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3">{f.title}</h3>
+                  <p className="text-gray-500 leading-relaxed">{f.desc}</p>
+                </motion.div>
+              );
+            })}
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Sparkles className="text-primary" size={32} />,
-                title: "Emotionally Aware",
-                desc: "Our AI understands your mood and adjusts its tone to provide appropriate comfort."
-              },
-              {
-                icon: <Shield className="text-primary" size={32} />,
-                title: "Privacy First",
-                desc: "Your memories and data are encrypted and kept strictly confidential."
-              },
-              {
-                icon: <Zap className="text-primary" size={32} />,
-                title: "Healthy Boundaries",
-                desc: "We encourage real-world connections and healthy ways to process grief."
-              }
-            ].map((feature, i) => (
+        </div>
+      </section>
+
+      {/* ═══════════ HOW IT WORKS ═══════════ */}
+      <section id="how-it-works" className="py-24 md:py-32 px-6 md:px-8">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">Process</span>
+            <h2 className="text-4xl md:text-5xl font-black mb-4">How It Works</h2>
+            <p className="text-gray-400 text-lg max-w-xl mx-auto">Three simple steps to begin your healing journey.</p>
+          </motion.div>
+
+          <div className="relative grid md:grid-cols-3 gap-8">
+            {/* Connector line */}
+            <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+            {steps.map((step, i) => (
               <motion.div
                 key={i}
-                whileHover={{ y: -10 }}
-                className="p-10 rounded-3xl glass border border-white/5 hover:border-primary/20 transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.15 }}
+                className="relative text-center"
               >
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-8">
-                  {feature.icon}
+                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-indigo/10 border border-primary/20 flex flex-col items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/10">
+                  <span className="text-xs font-bold text-primary/60 uppercase tracking-widest">{step.n}</span>
+                  <span className="text-2xl font-black gradient-text">{i + 1}</span>
                 </div>
-                <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{feature.desc}</p>
+                <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
+                <p className="text-gray-500 leading-relaxed">{step.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-20 px-8 border-t border-white/5 glass">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
-          <div className="flex items-center gap-2">
-            <Heart className="text-primary fill-primary" size={24} />
-            <span className="font-bold text-xl gradient-text">AI Memory Companion</span>
+      {/* ═══════════ TESTIMONIALS ═══════════ */}
+      <section id="testimonials" className="py-24 md:py-32 px-6 md:px-8 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/3 to-transparent pointer-events-none" />
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">Testimonials</span>
+            <h2 className="text-4xl md:text-5xl font-black mb-4">Stories of Healing</h2>
+            <p className="text-gray-400 text-lg max-w-xl mx-auto">Real families, real comfort, real healing.</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -4 }}
+                className="glass-card rounded-3xl border border-white/6 hover:border-primary/20 p-8 flex flex-col gap-6 transition-all duration-300"
+              >
+                {/* Stars */}
+                <div className="flex gap-1">
+                  {[...Array(t.rating)].map((_, j) => (
+                    <Star key={j} size={14} className="text-amber-400 fill-amber-400" />
+                  ))}
+                </div>
+                <p className="text-gray-300 italic leading-relaxed flex-1">"{t.quote}"</p>
+                <div className="flex items-center gap-3 pt-4 border-t border-white/6">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/40 to-indigo/40 flex items-center justify-center text-white font-bold">
+                    {t.name[0]}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{t.name}</p>
+                    <p className="text-xs text-gray-500">{t.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
-          <p className="text-gray-500 text-sm">© 2026 AI Memory Companion. All rights reserved.</p>
-          <div className="flex gap-6 text-gray-400">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+        </div>
+      </section>
+
+      {/* ═══════════ ABOUT ═══════════ */}
+      <section id="about" className="py-24 md:py-32 px-6 md:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-6">Our Mission</span>
+            <h2 className="text-4xl md:text-5xl font-black mb-6">Built for the Human Heart</h2>
+            <p className="text-gray-400 text-lg leading-relaxed mb-10">
+              We believe grief doesn't need to be faced alone. AI Memory Companion was founded on the belief that
+              technology can honor the depth of human relationships. We blend emotional intelligence with safe,
+              ethical AI to create a space where love, memory, and healing can coexist.
+            </p>
+            <Link to="/about">
+              <Button variant="outline" size="lg">Learn Our Story <ChevronRight size={18} /></Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════ CTA FOOTER ═══════════ */}
+      <section className="py-24 md:py-32 px-6 md:px-8 relative overflow-hidden">
+        <div className="absolute inset-0 hero-mesh opacity-60 pointer-events-none" />
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <p className="text-primary text-sm font-bold uppercase tracking-widest mb-4">Start Your Journey</p>
+            <h2 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
+              Your loved one's memory<br />deserves a <span className="gradient-text">safe home</span>.
+            </h2>
+            <p className="text-gray-400 text-lg mb-10">Join thousands of families preserving love through AI.</p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <Link to="/signup">
+                <Button size="xl" className="shadow-2xl shadow-primary/30 group">
+                  Create Your Memorial <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button variant="secondary" size="xl">Sign In</Button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════ FOOTER ═══════════ */}
+      <footer className="border-t border-white/6 py-12 px-6 md:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-10">
+            <Link to="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center">
+                <Heart size={16} className="text-white fill-white" />
+              </div>
+              <span className="font-bold gradient-text">AI Memory Companion</span>
+            </Link>
+
+            <nav className="flex flex-wrap gap-6 text-sm text-gray-500">
+              {[['#features','Features'],['#how-it-works','How It Works'],['#testimonials','Testimonials'],['/about','About'],['/contact','Contact']].map(([href, label]) => (
+                href.startsWith('#')
+                  ? <a key={href} href={href} className="hover:text-white transition-colors">{label}</a>
+                  : <Link key={href} to={href} className="hover:text-white transition-colors">{label}</Link>
+              ))}
+            </nav>
+
+            <div className="flex gap-4 text-sm text-gray-600">
+              <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-gray-300 transition-colors">Terms</a>
+            </div>
           </div>
+          <div className="section-divider mb-6" />
+          <p className="text-center text-xs text-gray-600">© 2026 AI Memory Companion. Built with love for healing hearts.</p>
         </div>
       </footer>
     </div>
