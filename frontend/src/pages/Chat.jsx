@@ -177,7 +177,8 @@ const Chat = () => {
     setErrorInfo(null);
 
     // ── Audit log — verify exactly one request per message ─────────────────
-    console.log('[Chat] Sending message to backend:', text.slice(0, 80));
+    console.log("Sending message to backend");
+    console.log('[Chat] Message snippet:', text.slice(0, 80));
 
     try {
       const { data } = await chatAPI.sendMessage(text);

@@ -26,8 +26,8 @@ async function getAIResponse(prompt, snippet) {
   // ── Model: use gemini-2.5-flash (current free-tier, 2026) ──────────────
   const model = client.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  // ── Duplicate-call audit log ────────────────────────────────────────────
-  console.log('[Gemini API] Gemini request sent:', snippet || '(no snippet)');
+  // ── Backend logs ────────────────────────────────────────────────────────
+  console.log("Gemini request sent:", prompt);
   console.log('[Gemini API] Model: gemini-2.5-flash | Time:', new Date().toISOString());
 
   const MAX_RETRIES = 2;
@@ -36,18 +36,21 @@ async function getAIResponse(prompt, snippet) {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
       console.log('[Gemini API] Success on attempt', attempt + 1);
       return {
         success: true,
-        text: result.response.text(),
+        text: text,
       };
-    } catch (err) {
-      const msg    = (err.message || '').toLowerCase();
-      const status = err.status || err.httpErrorCode || null;
+    } catch (error) {
+      console.error("Gemini error:", error);
+      
+      const msg    = (error.message || '').toLowerCase();
+      const status = error.status || error.httpErrorCode || (error.response ? error.response.status : null);
 
-      console.error(`[Gemini API] Attempt ${attempt + 1} failed — status: ${status} | msg: ${err.message}`);
-
-      // ── 1. Quota / Rate-limit errors → return immediately, no retry ───────
+      // ── 1. Quota / Rate-limit errors (429) → return immediately, no retry ───────
       const isQuota =
         status === 429 ||
         msg.includes('quota') ||
@@ -64,32 +67,15 @@ async function getAIResponse(prompt, snippet) {
         (msg.includes('token') && msg.includes('limit'));
 
       if (isQuota) {
-        console.warn('[Gemini API] Quota / rate-limit hit — NOT retrying.');
+        console.warn('[Gemini API] Quota exceeded — NOT retrying.');
         return {
           success: false,
           errorType: 'QUOTA_EXCEEDED',
-          message: 'Daily AI request limit reached. Please try again tomorrow.',
+          message: 'Daily AI request limit reached.',
         };
       }
 
-      // ── 2. Auth / bad-request errors → return immediately, no retry ───────
-      const isInvalid =
-        status === 400 ||
-        status === 403 ||
-        msg.includes('api key') ||
-        msg.includes('invalid key') ||
-        msg.includes('permission denied');
-
-      if (isInvalid) {
-        console.error('[Gemini API] Auth / invalid request — NOT retrying.');
-        return {
-          success: false,
-          errorType: 'INVALID_REQUEST',
-          message: 'There is an issue with the AI configuration. Please contact support.',
-        };
-      }
-
-      // ── 3. Temporary network / server errors → retry with backoff ─────────
+      // ── 2. Temporary network / server errors → retry with backoff ─────────
       const isNetwork =
         status >= 500 ||
         msg.includes('timeout') ||
@@ -97,21 +83,31 @@ async function getAIResponse(prompt, snippet) {
         msg.includes('econnreset') ||
         msg.includes('socket') ||
         msg.includes('fetch failed') ||
-        msg.includes('unavailable');
+        msg.includes('unavailable') ||
+        msg.includes('cold start') ||
+        msg.includes('internet');
 
       if (isNetwork && attempt < MAX_RETRIES) {
-        const wait = BASE_DELAY * Math.pow(2, attempt); // 1 s, 2 s
-        console.log(`[Gemini API] Network error — retrying in ${wait}ms (attempt ${attempt + 2}/${MAX_RETRIES + 1})`);
+        const wait = BASE_DELAY * Math.pow(2, attempt); // 1s, 2s
+        console.log(`[Gemini API] Temporary failure — retrying in ${wait}ms (attempt ${attempt + 2}/${MAX_RETRIES + 1})`);
         await delay(wait);
         continue;
       }
 
-      // ── 4. Fallback after retries exhausted or unrecognised error ─────────
-      console.error('[Gemini API] Final failure — returning TEMPORARY_FAILURE.');
+      // ── 3. Final failure or unrecognized error ────────────────────────────
+      if (isNetwork) {
+        return {
+          success: false,
+          errorType: 'TEMPORARY_FAILURE',
+          message: 'AI service temporarily unavailable. Please try again shortly.',
+        };
+      }
+
+      // ── 4. Fallback for other errors (Auth, Bad Request, etc.) ────────────
       return {
         success: false,
-        errorType: isNetwork ? 'TEMPORARY_FAILURE' : 'UNKNOWN_ERROR',
-        message: 'AI service temporarily unavailable. Please try again shortly.',
+        errorType: 'UNKNOWN_ERROR',
+        message: 'AI service encountered an issue. Please try again.',
       };
     }
   }
