@@ -1,31 +1,115 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send, Heart, Info, AlertCircle, Loader2, Mic, Paperclip,
-  Pin, ChevronRight, ChevronLeft, MessageCircle, Sparkles
+  Send, Heart, Info, AlertCircle, Loader2, Mic,
+  Pin, ChevronRight, MessageCircle, Sparkles, Clock, WifiOff,
 } from 'lucide-react';
 import ChatBubble from '../components/ChatBubble';
 import Button from '../components/Button';
 import { chatAPI, profileAPI, memoryAPI } from '../services/api';
 
-const Chat = () => {
-  const [messages, setMessages]         = useState([]);
-  const [input, setInput]               = useState('');
-  const [loading, setLoading]           = useState(false);
-  const [profile, setProfile]           = useState(null);
-  const [memories, setMemories]         = useState([]);
-  const [error, setError]               = useState('');
-  const [quotaError, setQuotaError]     = useState(false);
-  const [retryCount, setRetryCount]     = useState(0);
-  const [panelOpen, setPanelOpen]       = useState(false);
-  const [voiceFile, setVoiceFile]       = useState(null);
-  const [initialLoad, setInitialLoad]   = useState(true);
-  const scrollRef  = useRef(null);
-  const fileRef    = useRef(null);
-  const user       = JSON.parse(localStorage.getItem('user'));
+// ─────────────────────────────────────────────────────────────────────────────
+// ErrorCard — distinct visuals for quota vs temporary errors
+// ─────────────────────────────────────────────────────────────────────────────
+const ErrorCard = ({ errorType, message, onRetry, canRetry }) => {
+  const isQuota = errorType === 'QUOTA_EXCEEDED';
 
+  const config = isQuota
+    ? {
+        border: 'border-orange-500/30',
+        bg: 'bg-orange-500/8',
+        iconBg: 'bg-orange-500/15',
+        iconColor: 'text-orange-400',
+        textColor: 'text-orange-200',
+        icon: <Clock size={20} />,
+        title: 'Daily Limit Reached',
+        hint: 'Free AI quota resets at midnight (IST). Come back tomorrow!',
+      }
+    : {
+        border: 'border-red-500/25',
+        bg: 'bg-red-500/6',
+        iconBg: 'bg-red-500/15',
+        iconColor: 'text-red-400',
+        textColor: 'text-red-300',
+        icon: <WifiOff size={20} />,
+        title: 'Connection Issue',
+        hint: 'This is a temporary issue. You can retry sending.',
+      };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="flex justify-center my-2"
+    >
+      <div
+        className={`${config.bg} ${config.border} border rounded-2xl px-5 py-4 flex flex-col items-center gap-2.5 text-sm max-w-sm w-full text-center shadow-lg`}
+      >
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${config.iconBg} ${config.iconColor}`}>
+          {config.icon}
+        </div>
+        <div>
+          <p className={`font-semibold ${config.textColor} mb-0.5`}>{config.title}</p>
+          <p className={`text-xs ${config.textColor} opacity-80`}>{message}</p>
+          <p className={`text-xs ${config.textColor} opacity-50 mt-1`}>{config.hint}</p>
+        </div>
+        {canRetry && !isQuota && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRetry}
+            className="mt-1 text-xs py-1.5 px-4 h-auto border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300"
+          >
+            Retry Sending
+          </Button>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chat page
+// ─────────────────────────────────────────────────────────────────────────────
+const DEBOUNCE_MS = 2000; // 2-second debounce
+
+const Chat = () => {
+  const [messages, setMessages]       = useState([]);
+  const [input, setInput]             = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [profile, setProfile]         = useState(null);
+  const [memories, setMemories]       = useState([]);
+  const [errorInfo, setErrorInfo]     = useState(null); // { errorType, message }
+  const [panelOpen, setPanelOpen]     = useState(false);
+  const [voiceFile, setVoiceFile]     = useState(null);
+  const [initialLoad, setInitialLoad] = useState(true);
+
+  const scrollRef   = useRef(null);
+  const fileRef     = useRef(null);
+  const textareaRef = useRef(null);
+
+  /**
+   * isInFlight ref — TRUE while a Gemini request is in-progress.
+   * Using a ref (not state) means it is synchronously updated and is
+   * immune to React StrictMode's double-invocation of render functions.
+   * Even if handleSend is called twice in the same tick, the second call
+   * will see isInFlight.current === true and bail out immediately.
+   */
+  const isInFlight = useRef(false);
+
+  /**
+   * lastSentAt ref — timestamp of the last successful send.
+   * Prevents rapid double-clicks bypassing the loading state.
+   */
+  const lastSentAt = useRef(0);
+
+  const user = JSON.parse(localStorage.getItem('user'));
+
+  // ── Load chat history, profile, memories on mount ─────────────────────
   useEffect(() => {
+    let cancelled = false; // guard against StrictMode double-mount cleanup
     const load = async () => {
       try {
         const [histRes, profRes, memRes] = await Promise.all([
@@ -33,75 +117,95 @@ const Chat = () => {
           profileAPI.getProfile(user._id),
           memoryAPI.getMemories(user._id),
         ]);
-        setMessages(histRes.data);
-        setProfile(profRes.data);
-        setMemories(memRes.data);
+        if (!cancelled) {
+          setMessages(histRes.data);
+          setProfile(profRes.data);
+          setMemories(memRes.data);
+        }
       } catch (err) {
-        console.error(err);
-        setError('Failed to load chat data.');
+        if (!cancelled) {
+          console.error('[Chat] Failed to load chat data:', err);
+          setErrorInfo({ errorType: 'LOAD_ERROR', message: 'Failed to load chat data. Please refresh.' });
+        }
       } finally {
-        setInitialLoad(false);
+        if (!cancelled) setInitialLoad(false);
       }
     };
     load();
-  }, [user._id]);
+    return () => { cancelled = true; };
+  }, [user._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Auto-scroll to bottom ──────────────────────────────────────────────
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, loading]);
 
-  const handleSend = async (e, isRetry = false, retryText = null) => {
+  // ── Core send handler ──────────────────────────────────────────────────
+  const handleSend = useCallback(async (e, retryText = null) => {
     if (e) e.preventDefault();
-    const text = isRetry ? retryText : (input.trim() || (voiceFile ? `🎤 [Voice note: ${voiceFile.name}]` : ''));
-    if (!text || loading) return;
 
-    if (!isRetry) {
-      const userMessage = { role: 'user', content: text, createdAt: new Date() };
-      setMessages((prev) => [...prev, userMessage]);
+    const text = retryText ?? (input.trim() || (voiceFile ? `🎤 [Voice note: ${voiceFile.name}]` : ''));
+    if (!text) return;
+
+    // ── Guard 1: in-flight ref lock (synchronous — StrictMode safe) ───────
+    if (isInFlight.current) {
+      console.warn('[Chat] Request already in-flight — ignoring duplicate call.');
+      return;
+    }
+
+    // ── Guard 2: 2-second debounce ─────────────────────────────────────────
+    const now = Date.now();
+    if (!retryText && now - lastSentAt.current < DEBOUNCE_MS) {
+      console.warn('[Chat] Debounce active — ignoring rapid send.');
+      return;
+    }
+
+    // ── Acquire lock ───────────────────────────────────────────────────────
+    isInFlight.current = true;
+    lastSentAt.current = now;
+
+    // Optimistically add user message (only on fresh send, not retry)
+    if (!retryText) {
+      setMessages(prev => [...prev, { role: 'user', content: text, createdAt: new Date() }]);
       setInput('');
       setVoiceFile(null);
-      setRetryCount(0);
     }
-    
+
     setLoading(true);
-    setError('');
-    setQuotaError(false);
+    setErrorInfo(null);
+
+    // ── Audit log — verify exactly one request per message ─────────────────
+    console.log('[Chat] Sending message to backend:', text.slice(0, 80));
 
     try {
       const { data } = await chatAPI.sendMessage(text);
+
       if (data.success) {
-        const aiMessage = { role: 'assistant', content: data.message, createdAt: new Date() };
-        setMessages((prev) => [...prev, aiMessage]);
-        setRetryCount(0);
+        setMessages(prev => [...prev, { role: 'assistant', content: data.message, createdAt: new Date() }]);
+      } else {
+        // Backend returned a structured error (rare; usually thrown by axios)
+        setErrorInfo({ errorType: data.errorType || 'UNKNOWN_ERROR', message: data.message });
       }
     } catch (err) {
-      console.error('Chat error details:', err.response?.data || err);
-      
-      const errorType = err.response?.data?.errorType;
-      const errMsg = err.response?.data?.message || err.message || 'Message failed. Please try again.';
-      
-      if (errorType === 'QUOTA_EXCEEDED') {
-        setQuotaError(true);
-        setError(errMsg);
-      } else if (errorType === 'NETWORK_ERROR' && retryCount < 2) {
-        setRetryCount(prev => prev + 1);
-        setError(`Network issue. Retrying... (${retryCount + 1}/2)`);
-        // The backend handles retries, but if it still fails and we catch it here,
-        // we can attempt a client-side retry as a fallback, though usually backend retry is enough.
-        // For now, we'll just show the error and let the user click a retry button.
-        setQuotaError(false);
-      } else {
-        setError(errMsg);
-        setQuotaError(false);
-      }
+      const errorType = err.response?.data?.errorType || 'UNKNOWN_ERROR';
+      const message   = err.response?.data?.message   || err.message || 'Something went wrong. Please try again.';
+      console.error('[Chat] API error:', errorType, message);
+      setErrorInfo({ errorType, message });
     } finally {
       setLoading(false);
+      isInFlight.current = false; // ── Release lock ────────────────────────
     }
-  };
+  }, [input, voiceFile]);
 
-  /* ── No Profile State ── */
+  // ── Retry last user message ────────────────────────────────────────────
+  const handleRetry = useCallback(() => {
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    if (lastUserMsg) handleSend(null, lastUserMsg.content);
+  }, [messages, handleSend]);
+
+  // ── No profile state ───────────────────────────────────────────────────
   if (!initialLoad && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] max-w-md mx-auto text-center gap-6">
@@ -125,10 +229,15 @@ const Chat = () => {
     );
   }
 
+  const canSend = (input.trim() || voiceFile) && !loading;
+  const isQuotaError = errorInfo?.errorType === 'QUOTA_EXCEEDED';
+
   return (
     <div className="flex h-[calc(100vh-6rem)] gap-5 relative">
+
       {/* ── Main Chat Area ── */}
       <div className="flex flex-col flex-1 glass-card rounded-3xl border border-white/6 overflow-hidden min-w-0">
+
         {/* Chat Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/6 glass-dark shrink-0">
           <div className="flex items-center gap-3">
@@ -160,6 +269,8 @@ const Chat = () => {
 
         {/* Messages Area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-4 scroll-smooth">
+
+          {/* Empty state */}
           {messages.length === 0 && !loading && !initialLoad && (
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -173,7 +284,7 @@ const Chat = () => {
                 Send a message to begin reminiscing. I'm here to listen, always.
               </p>
               <div className="flex flex-wrap gap-2 justify-center mt-2">
-                {["Tell me about them", "I miss them today", "Share a memory"].map(s => (
+                {['Tell me about them', 'I miss them today', 'Share a memory'].map(s => (
                   <button
                     key={s}
                     onClick={() => setInput(s)}
@@ -186,6 +297,7 @@ const Chat = () => {
             </motion.div>
           )}
 
+          {/* Message bubbles */}
           <AnimatePresence initial={false}>
             {messages.map((msg, i) => (
               <ChatBubble key={i} message={msg.content} role={msg.role} timestamp={msg.createdAt} />
@@ -211,34 +323,17 @@ const Chat = () => {
             </motion.div>
           )}
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="flex justify-center my-4"
-            >
-              <div className={`
-                ${quotaError ? 'bg-orange-500/10 border-orange-500/30' : 'bg-red-500/8 border-red-500/20'} 
-                border px-5 py-4 rounded-2xl flex flex-col items-center gap-3 text-sm max-w-sm text-center shadow-lg
-              `}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${quotaError ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
-                  <AlertCircle size={20} />
-                </div>
-                <p className={quotaError ? 'text-orange-200' : 'text-red-300'}>{error}</p>
-                
-                {/* Retry Button for network/timeout errors */}
-                {!quotaError && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={(e) => handleSend(e, true, messages[messages.length - 1].content)}
-                    className="mt-2 text-xs py-1.5 px-4 h-auto border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300"
-                  >
-                    Retry Sending
-                  </Button>
-                )}
-              </div>
-            </motion.div>
-          )}
+          {/* Error card */}
+          <AnimatePresence>
+            {errorInfo && (
+              <ErrorCard
+                errorType={errorInfo.errorType}
+                message={errorInfo.message}
+                onRetry={handleRetry}
+                canRetry={messages.length > 0 && messages[messages.length - 1]?.role === 'user'}
+              />
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Voice file preview */}
@@ -252,12 +347,24 @@ const Chat = () => {
 
         {/* Input Area */}
         <div className="px-6 py-4 border-t border-white/6 glass-dark shrink-0">
-          <form onSubmit={handleSend} className="flex items-end gap-3">
+
+          {/* Quota banner */}
+          {isQuotaError && (
+            <div className="mb-3 px-4 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300 text-center">
+              ⚡ Daily AI limit reached — sending is disabled until quota resets.
+            </div>
+          )}
+
+          <form
+            onSubmit={handleSend}
+            className="flex items-end gap-3"
+          >
             {/* Voice upload */}
             <button
               type="button"
+              disabled={loading || isQuotaError}
               onClick={() => fileRef.current?.click()}
-              className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-primary/10 border border-white/8 hover:border-primary/20 flex items-center justify-center text-gray-400 hover:text-primary transition-all shrink-0"
+              className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-primary/10 border border-white/8 hover:border-primary/20 flex items-center justify-center text-gray-400 hover:text-primary transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Mic size={18} />
             </button>
@@ -266,35 +373,50 @@ const Chat = () => {
               type="file"
               accept="audio/*"
               className="hidden"
-              onChange={(e) => setVoiceFile(e.target.files[0])}
+              onChange={e => setVoiceFile(e.target.files[0])}
             />
 
             <div className="flex-1 relative group">
               <textarea
+                ref={textareaRef}
                 rows={1}
-                placeholder="Share a memory or just say hello…"
+                placeholder={
+                  isQuotaError
+                    ? 'Daily limit reached — try again tomorrow…'
+                    : 'Share a memory or just say hello…'
+                }
                 value={input}
-                onChange={(e) => {
+                disabled={loading || isQuotaError}
+                onChange={e => {
                   setInput(e.target.value);
                   e.target.style.height = 'auto';
                   e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); }
+                onKeyDown={e => {
+                  // Enter sends; Shift+Enter inserts newline
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!loading && !isQuotaError) handleSend(e);
+                  }
                 }}
-                className="w-full bg-white/5 border border-white/8 rounded-2xl py-3 px-5 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200 resize-none placeholder:text-gray-600 text-sm"
+                className="w-full bg-white/5 border border-white/8 rounded-2xl py-3 px-5 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200 resize-none placeholder:text-gray-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ maxHeight: '120px', overflowY: 'auto' }}
               />
             </div>
 
+            {/* Send button */}
             <button
               type="submit"
-              disabled={(!input.trim() && !voiceFile) || loading || quotaError}
+              disabled={!canSend || isQuotaError}
               className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-indigo text-white flex items-center justify-center hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/25 shrink-0"
             >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              {loading
+                ? <Loader2 size={18} className="animate-spin" />
+                : <Send size={18} />
+              }
             </button>
           </form>
+
           <p className="text-center text-[11px] text-gray-700 mt-3 flex items-center justify-center gap-1.5">
             <Heart size={10} className="text-primary" />
             Always here to listen · Press Enter to send, Shift+Enter for new line

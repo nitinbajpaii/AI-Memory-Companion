@@ -14,7 +14,7 @@ const profileRoutes = require('./routes/profileRoutes');
 const { checkDbConnection } = require('./middleware/dbStatus');
 
 // Startup Check
-const requiredEnv = ['OPENAI_API_KEY', 'JWT_SECRET', 'MONGO_URI'];
+const requiredEnv = ['GEMINI_API_KEY', 'JWT_SECRET', 'MONGO_URI'];
 const missingEnv = requiredEnv.filter(env => !process.env[env] || process.env[env].includes('your_') || process.env[env].includes('<'));
 
 if (missingEnv.length > 0) {

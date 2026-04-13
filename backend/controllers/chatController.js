@@ -61,15 +61,20 @@ User message: ${message}
     // Save user message
     await Chat.create({ userId: req.user._id, role: 'user', content: message });
 
-    // Get AI response from Gemini
-    const aiResponse = await getAIResponse(prompt);
+    // Get AI response from Gemini — pass snippet for duplicate-call logging
+    const snippet = message ? message.slice(0, 80) : '';
+    const aiResponse = await getAIResponse(prompt, snippet);
 
     if (!aiResponse.success) {
-      console.warn(`[Chat Controller] Gemini API failed with ${aiResponse.errorType}: ${aiResponse.message}`);
-      return res.status(429).json({ 
+      console.warn(`[Chat Controller] Gemini failed — errorType: ${aiResponse.errorType} | msg: ${aiResponse.message}`);
+      // Use 429 for quota errors, 503 for temporary failures, 500 for others
+      const httpStatus =
+        aiResponse.errorType === 'QUOTA_EXCEEDED'    ? 429 :
+        aiResponse.errorType === 'TEMPORARY_FAILURE' ? 503 : 500;
+      return res.status(httpStatus).json({
         success: false,
-        errorType: aiResponse.errorType || "QUOTA_EXCEEDED",
-        message: aiResponse.message || "I'm unable to respond right now due to service limits. Please try again shortly."
+        errorType: aiResponse.errorType || 'UNKNOWN_ERROR',
+        message: aiResponse.message || 'AI service error. Please try again.',
       });
     }
 
