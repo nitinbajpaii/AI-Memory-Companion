@@ -16,6 +16,8 @@ const Chat = () => {
   const [profile, setProfile]           = useState(null);
   const [memories, setMemories]         = useState([]);
   const [error, setError]               = useState('');
+  const [quotaError, setQuotaError]     = useState(false);
+  const [retryCount, setRetryCount]     = useState(0);
   const [panelOpen, setPanelOpen]       = useState(false);
   const [voiceFile, setVoiceFile]       = useState(null);
   const [initialLoad, setInitialLoad]   = useState(true);
@@ -50,26 +52,50 @@ const Chat = () => {
     }
   }, [messages, loading]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if ((!input.trim() && !voiceFile) || loading) return;
+  const handleSend = async (e, isRetry = false, retryText = null) => {
+    if (e) e.preventDefault();
+    const text = isRetry ? retryText : (input.trim() || (voiceFile ? `🎤 [Voice note: ${voiceFile.name}]` : ''));
+    if (!text || loading) return;
 
-    const text = input.trim() || (voiceFile ? `🎤 [Voice note: ${voiceFile.name}]` : '');
-    const userMessage = { role: 'user', content: text, createdAt: new Date() };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setVoiceFile(null);
+    if (!isRetry) {
+      const userMessage = { role: 'user', content: text, createdAt: new Date() };
+      setMessages((prev) => [...prev, userMessage]);
+      setInput('');
+      setVoiceFile(null);
+      setRetryCount(0);
+    }
+    
     setLoading(true);
     setError('');
+    setQuotaError(false);
 
     try {
       const { data } = await chatAPI.sendMessage(text);
-      const aiMessage = { role: 'assistant', content: data.message, createdAt: new Date() };
-      setMessages((prev) => [...prev, aiMessage]);
+      if (data.success) {
+        const aiMessage = { role: 'assistant', content: data.message, createdAt: new Date() };
+        setMessages((prev) => [...prev, aiMessage]);
+        setRetryCount(0);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Chat error details:', err.response?.data || err);
+      
+      const errorType = err.response?.data?.errorType;
       const errMsg = err.response?.data?.message || err.message || 'Message failed. Please try again.';
-      setError(errMsg);
+      
+      if (errorType === 'QUOTA_EXCEEDED') {
+        setQuotaError(true);
+        setError(errMsg);
+      } else if (errorType === 'NETWORK_ERROR' && retryCount < 2) {
+        setRetryCount(prev => prev + 1);
+        setError(`Network issue. Retrying... (${retryCount + 1}/2)`);
+        // The backend handles retries, but if it still fails and we catch it here,
+        // we can attempt a client-side retry as a fallback, though usually backend retry is enough.
+        // For now, we'll just show the error and let the user click a retry button.
+        setQuotaError(false);
+      } else {
+        setError(errMsg);
+        setQuotaError(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -186,12 +212,32 @@ const Chat = () => {
           )}
 
           {error && (
-            <div className="flex justify-center">
-              <div className="bg-red-500/8 border border-red-500/20 text-red-400 px-4 py-2 rounded-2xl flex items-center gap-2 text-sm">
-                <AlertCircle size={14} />
-                {error}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="flex justify-center my-4"
+            >
+              <div className={`
+                ${quotaError ? 'bg-orange-500/10 border-orange-500/30' : 'bg-red-500/8 border-red-500/20'} 
+                border px-5 py-4 rounded-2xl flex flex-col items-center gap-3 text-sm max-w-sm text-center shadow-lg
+              `}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${quotaError ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
+                  <AlertCircle size={20} />
+                </div>
+                <p className={quotaError ? 'text-orange-200' : 'text-red-300'}>{error}</p>
+                
+                {/* Retry Button for network/timeout errors */}
+                {!quotaError && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={(e) => handleSend(e, true, messages[messages.length - 1].content)}
+                    className="mt-2 text-xs py-1.5 px-4 h-auto border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300"
+                  >
+                    Retry Sending
+                  </Button>
+                )}
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
 
@@ -243,7 +289,7 @@ const Chat = () => {
 
             <button
               type="submit"
-              disabled={(!input.trim() && !voiceFile) || loading}
+              disabled={(!input.trim() && !voiceFile) || loading || quotaError}
               className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-indigo text-white flex items-center justify-center hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/25 shrink-0"
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}

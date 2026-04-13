@@ -62,16 +62,31 @@ User message: ${message}
     await Chat.create({ userId: req.user._id, role: 'user', content: message });
 
     // Get AI response from Gemini
-    const aiMessage = await getAIResponse(prompt);
+    const aiResponse = await getAIResponse(prompt);
+
+    if (!aiResponse.success) {
+      console.warn(`[Chat Controller] Gemini API failed with ${aiResponse.errorType}: ${aiResponse.message}`);
+      return res.status(429).json({ 
+        success: false,
+        errorType: aiResponse.errorType || "QUOTA_EXCEEDED",
+        message: aiResponse.message || "I'm unable to respond right now due to service limits. Please try again shortly."
+      });
+    }
+
+    const aiMessage = aiResponse.text;
 
     // Save AI response
     await Chat.create({ userId: req.user._id, role: 'assistant', content: aiMessage });
 
-    res.json({ message: aiMessage });
+    res.json({ success: true, message: aiMessage });
 
   } catch (error) {
     console.error('Chat error:', error?.message || error);
-    res.status(500).json({ message: error?.message || 'Error communicating with AI' });
+    res.status(500).json({ 
+      success: false, 
+      errorType: 'SERVER_ERROR',
+      message: error?.message || 'Error communicating with AI' 
+    });
   }
 };
 
