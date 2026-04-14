@@ -2,11 +2,12 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, MessageCircle, Heart,
-  User, Settings, LogOut, Mic, X, Sparkles,
+  Home, LayoutDashboard, MessageCircle, Heart,
+  User, Settings, LogOut, X, Sparkles,
 } from 'lucide-react';
 
 const navItems = [
+  { name: 'Home',        path: '/',           icon: Home,            color: 'text-primary'    },
   { name: 'Dashboard',   path: '/dashboard', icon: LayoutDashboard, color: 'text-violet-400'  },
   { name: 'Memory Chat', path: '/chat',       icon: MessageCircle,   color: 'text-blue-400'   },
   { name: 'Memories',    path: '/memories',   icon: Heart,           color: 'text-pink-400'   },

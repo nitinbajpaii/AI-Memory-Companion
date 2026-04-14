@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Search, User, Settings, LogOut, ChevronDown, Menu, Heart, Sparkles } from 'lucide-react';
+import { Home, User, Settings, LogOut, ChevronDown, Menu, Heart, Sparkles, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = ({ onMenuClick }) => {
   const user         = JSON.parse(localStorage.getItem('user'));
   const navigate     = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [hasNote, setHasNote]           = useState(true); // notification dot
   const dropdownRef  = useRef(null);
 
   useEffect(() => {
@@ -35,10 +34,10 @@ const Navbar = ({ onMenuClick }) => {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="h-16 glass-dark border-b border-white/6 flex items-center justify-between px-5 md:px-6 sticky top-0 z-30 shrink-0"
+      className="h-16 glass-dark border-b border-white/6 flex items-center justify-between px-5 md:px-8 sticky top-0 z-30 shrink-0 shadow-lg shadow-black/20"
     >
-      {/* ── Left: Mobile menu + Search ── */}
-      <div className="flex items-center gap-3">
+      {/* ── Left: Brand & Nav ── */}
+      <div className="flex items-center gap-6">
         <motion.button
           onClick={onMenuClick}
           whileHover={{ scale: 1.08 }}
@@ -48,45 +47,31 @@ const Navbar = ({ onMenuClick }) => {
           <Menu size={18} />
         </motion.button>
 
-        {/* Search bar */}
-        <div className="hidden sm:flex items-center gap-3 bg-white/4 hover:bg-white/6 border border-white/8 hover:border-white/15 rounded-2xl px-4 py-2.5 w-56 lg:w-72 group focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/30 transition-all duration-200">
-          <Search size={15} className="text-gray-600 group-focus-within:text-primary transition-colors shrink-0" />
-          <input
-            type="text"
-            placeholder="Search memories..."
-            autoComplete="off"
-            className="bg-transparent border-none outline-none text-white placeholder:text-gray-600 w-full text-sm"
-          />
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
+            <Heart size={16} className="text-white fill-white" />
+          </div>
+          <span className="hidden sm:block font-black text-sm gradient-text">AI Memory Companion</span>
+        </Link>
+
+        {/* Dashboard Navigation */}
+        <div className="hidden md:flex items-center gap-2 pl-4 border-l border-white/10">
+          <Link
+            to="/"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all text-xs font-semibold group"
+          >
+            <Home size={14} className="group-hover:scale-110 transition-transform" />
+            Home
+          </Link>
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold shadow-sm">
+            <LayoutDashboard size={14} />
+            Dashboard
+          </div>
         </div>
       </div>
 
-      {/* ── Right ── */}
+      {/* ── Right: Profile ── */}
       <div className="flex items-center gap-2.5">
-
-        {/* Notification bell */}
-        <motion.button
-          whileHover={{ scale: 1.08, rotate: hasNote ? [0, -10, 10, -6, 0] : 0 }}
-          whileTap={{ scale: 0.92 }}
-          transition={{ duration: 0.35 }}
-          onClick={() => setHasNote(false)}
-          className="relative w-9 h-9 rounded-xl bg-white/4 hover:bg-white/8 border border-white/6 hover:border-primary/20 flex items-center justify-center text-gray-400 hover:text-white transition-all duration-200"
-        >
-          <Bell size={17} />
-          <AnimatePresence>
-            {hasNote && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-                className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full ring-2 ring-dark"
-              />
-            )}
-          </AnimatePresence>
-        </motion.button>
-
-        {/* Divider */}
-        <div className="h-6 w-px bg-white/8" />
-
         {/* Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <motion.button
