@@ -20,8 +20,28 @@ async function transcribeAudio(audioBuffer, mimeType) {
   // gemini-1.5-flash supports audio inlineData
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-  // Clean mimeType: 'audio/webm;codecs=opus' -> 'audio/webm'
-  const baseMimeType = (mimeType || 'audio/webm').split(';')[0];
+  // ── Clean & Normalize mimeType ───────────────────────────────────────────
+  // Gemini expects: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac, audio/webm
+  let baseMimeType = (mimeType || 'audio/webm').split(';')[0].toLowerCase();
+  
+  // Mapping for common browser/upload variations
+  const mimeMap = {
+    'audio/x-m4a':  'audio/mp4',
+    'audio/m4a':    'audio/mp4',
+    'audio/mpeg':   'audio/mp3',
+    'audio/mp3':    'audio/mp3',
+    'audio/wav':    'audio/wav',
+    'audio/wave':   'audio/wav',
+    'audio/x-wav':  'audio/wav',
+    'audio/ogg':    'audio/ogg',
+    'audio/webm':   'audio/webm',
+  };
+
+  if (mimeMap[baseMimeType]) {
+    baseMimeType = mimeMap[baseMimeType];
+  }
+
+  console.log(`[STT] Sending to Gemini: ${audioBuffer.length} bytes | mime: ${baseMimeType}`);
 
   const audioPart = {
     inlineData: {
@@ -38,14 +58,29 @@ async function transcribeAudio(audioBuffer, mimeType) {
     ]);
 
     const text = result.response.text().trim();
-    if (!text) throw new Error('Empty transcription returned by Gemini');
+    
+    // Check if Gemini actually transcribed something or just returned empty
+    if (!text || text.length < 1) {
+      console.warn('[STT] Gemini returned empty response.');
+      throw new Error('NO_SPEECH_DETECTED');
+    }
+
     return text;
   } catch (err) {
     console.error('[STT] Gemini Transcription error:', err.message);
+    
+    // Categorize errors for better UX
     if (err.message.includes('safety') || err.message.includes('blocked')) {
-      throw new Error('Transcription blocked by safety filters. Please speak appropriately.');
+      throw new Error('SAFETY_BLOCKED');
     }
-    throw err;
+    if (err.message === 'NO_SPEECH_DETECTED') {
+      throw err;
+    }
+    if (err.message.includes('quota') || err.message.includes('429')) {
+      throw new Error('QUOTA_EXCEEDED');
+    }
+    
+    throw new Error('TRANSCRIPTION_SERVICE_ERROR');
   }
 }
 
@@ -185,10 +220,21 @@ const handleVoiceChat = async (req, res) => {
       console.log('[Voice] Transcript:', transcript.slice(0, 120));
     } catch (err) {
       console.error('[Voice] Transcription failed:', err.message);
+
+      // Map internal errors to user-friendly messages
+      const errorMap = {
+        'NO_SPEECH_DETECTED':           'No speech detected. Please speak clearly or try a different file.',
+        'SAFETY_BLOCKED':               'Voice note blocked by safety filters. Please try again.',
+        'QUOTA_EXCEEDED':               'Daily transcription limit reached.',
+        'TRANSCRIPTION_SERVICE_ERROR':  'AI service error during transcription. Please try again.',
+      };
+
+      const message = errorMap[err.message] || 'Could not process audio. Please try again.';
+      
       return res.status(422).json({
         success:   false,
-        errorType: 'TRANSCRIPTION_FAILED',
-        message:   'Could not understand the audio. Please speak clearly and try again.',
+        errorType: err.message === 'QUOTA_EXCEEDED' ? 'QUOTA_EXCEEDED' : 'TRANSCRIPTION_FAILED',
+        message:   message,
       });
     }
 

@@ -38,12 +38,16 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      // Prefer webm/opus (Chrome/Firefox) — fallback to audio/ogg or audio/mp4
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-          ? 'audio/ogg;codecs=opus'
-          : 'audio/mp4';
+      // Detect best supported mimeType
+      const types = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/aac',
+        'audio/wav'
+      ];
+      const mimeType = types.find(t => MediaRecorder.isTypeSupported(t)) || 'audio/webm';
 
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
@@ -113,9 +117,12 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
     stopRecording();
     
     // Validate format
-    const validFormats = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-m4a', 'audio/m4a', 'audio/webm', 'audio/ogg'];
-    if (!validFormats.includes(file.type)) {
-      onError?.('Invalid audio format. Please upload MP3, WAV, M4A, or WebM.');
+    const validFormats = [
+      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/x-wav', 
+      'audio/x-m4a', 'audio/m4a', 'audio/mp4', 'audio/webm', 'audio/ogg', 'audio/aac'
+    ];
+    if (!validFormats.includes(file.type) && !file.name.match(/\.(mp3|wav|m4a|webm|ogg|aac)$/i)) {
+      onError?.('Invalid audio format. Please upload MP3, WAV, M4A, WebM, or OGG.');
       return;
     }
 
@@ -133,7 +140,17 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
 
     try {
       const formData = new FormData();
-      formData.append('audio', blobRef.current, `voice_${Date.now()}.webm`);
+      
+      // Determine filename and extension
+      let filename = 'voice_message.webm';
+      if (blobRef.current instanceof File) {
+        filename = blobRef.current.name;
+      } else {
+        const ext = blobRef.current.type.split('/')[1]?.split(';')[0] || 'webm';
+        filename = `recording_${Date.now()}.${ext}`;
+      }
+
+      formData.append('audio', blobRef.current, filename);
       formData.append('voiceType', voiceType);
 
       const { data } = await voiceAPI.transcribe(formData);
@@ -146,6 +163,7 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
         setState('previewing');
       }
     } catch (err) {
+      console.error('[VoiceRecorder] Error sending voice:', err);
       const msg = err.response?.data?.message || 'Voice processing failed. Please try again.';
       onError?.(msg);
       setState('previewing');
