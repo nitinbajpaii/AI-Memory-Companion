@@ -51,6 +51,10 @@ export const reviewsAPI = {
   submitReview:  (data) => API.post('/reviews', data),
 };
 
+export const contactAPI = {
+  submitForm: (data) => API.post('/contact', data),
+};
+
 export const voiceAPI = {
   transcribe: (formData) =>
     API.post('/voice/transcribe', formData, {
