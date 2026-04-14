@@ -21,82 +21,48 @@ async function transcribeAudio(audioBuffer, mimeType) {
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
   // ── Clean & Normalize mimeType ───────────────────────────────────────────
-  // Gemini 1.5 Flash supports: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac, audio/webm
-  let baseMimeType = (mimeType || 'audio/webm').split(';')[0].toLowerCase();
-  
-  // Comprehensive mapping for browser & mobile upload variations
-  const mimeMap = {
-    'audio/x-m4a':    'audio/mp4',
-    'audio/m4a':      'audio/mp4',
-    'audio/x-mp4':    'audio/mp4',
-    'audio/mpeg':     'audio/mp3',
-    'audio/mp3':      'audio/mp3',
-    'audio/x-mp3':    'audio/mp3',
-    'audio/wav':      'audio/wav',
-    'audio/wave':     'audio/wav',
-    'audio/x-wav':    'audio/wav',
-    'audio/ogg':      'audio/ogg',
-    'audio/x-ogg':    'audio/ogg',
-    'audio/webm':     'audio/webm',
-    'audio/x-webm':   'audio/webm',
-    'audio/aac':      'audio/aac',
-    'audio/x-aac':    'audio/aac',
-    'audio/3gp':      'audio/3gpp',
-    'audio/3gpp':     'audio/3gpp',
-    'audio/x-3gpp':   'audio/3gpp',
-    'video/webm':     'audio/webm',
-    'video/mp4':      'audio/mp4',
-    'application/octet-stream': 'audio/webm', 
-  };
-
-  if (mimeMap[baseMimeType]) {
-    baseMimeType = mimeMap[baseMimeType];
-  }
-
-  // Final validation: Ensure it starts with audio/ or we fallback
-  if (!baseMimeType.startsWith('audio/') && !baseMimeType.startsWith('video/')) {
-    baseMimeType = 'audio/webm';
-  }
-
-  console.log(`[STT] Buffer size: ${audioBuffer.length} bytes | Original mime: ${mimeType} | Sending to Gemini as: ${baseMimeType}`);
+  let normalizedMimeType = mimeType || 'audio/webm';
+  if (normalizedMimeType === "audio/mp3") normalizedMimeType = "audio/mpeg"; 
+  if (normalizedMimeType === "audio/x-wav") normalizedMimeType = "audio/wav"; 
+  if (normalizedMimeType === "audio/m4a") normalizedMimeType = "audio/mp4"; 
+  if (normalizedMimeType === "audio/3gpp") normalizedMimeType = "audio/mp4"; 
+  if (normalizedMimeType.includes("webm")) normalizedMimeType = "audio/webm";
 
   if (!audioBuffer || audioBuffer.length === 0) {
     throw new Error('EMPTY_AUDIO_BUFFER');
   }
-
-  const audioPart = {
-    inlineData: {
-      data: audioBuffer.toString('base64'),
-      mimeType: baseMimeType,
-    },
-  };
+  console.log("buffer length", audioBuffer.length);
+  const audioBase64 = audioBuffer.toString("base64");
 
   try {
     const result = await model.generateContent([
-      { text: 'Transcribe the following audio message to plain text. Return ONLY the spoken words — no explanations, no punctuation notes, just the transcription.' },
-      audioPart,
+      {
+        inlineData: {
+          mimeType: normalizedMimeType,
+          data:     audioBase64,
+        },
+      },
+      {
+        text: "Transcribe this audio exactly and return only the spoken text.",
+      },
     ]);
 
-    const text = result.response.text().trim();
+    const transcription = result.response.text().trim();
+    console.log("Gemini transcription response:", transcription);
     
-    if (!text || text.length < 1) {
+    if (!transcription) {
       console.warn('[STT] Gemini returned empty response.');
       throw new Error('NO_SPEECH_DETECTED');
     }
 
-    return text;
+    return transcription;
   } catch (err) {
-    console.error('[STT] Gemini transcription error details:', {
-      message: err.message,
-      stack:   err.stack,
-      status:  err.status,
-      details: err.response?.data || 'No response data'
-    });
+    console.error("Gemini transcription error:", err.response?.data || err.message);
     
     if (err.message.includes('safety') || err.message.includes('blocked')) {
       throw new Error('SAFETY_BLOCKED');
     }
-    if (err.message === 'NO_SPEECH_DETECTED' || err.message === 'EMPTY_AUDIO_BUFFER') {
+    if (err.message === 'NO_SPEECH_DETECTED') {
       throw err;
     }
     if (err.message.includes('quota') || err.message.includes('429')) {
