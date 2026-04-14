@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import {
   Heart, Shield, Sparkles, Zap, MessageCircle, Star, ChevronRight,
-  ArrowRight, Mic, Lock, Brain, Menu, X, Clock, Users
+  ArrowRight, Mic, Lock, Brain, Menu, X, Clock, Users, LayoutDashboard
 } from 'lucide-react';
 import Button from '../components/Button';
 import ReviewSection from '../components/ReviewSection';
+import ProfileDropdown from '../components/ProfileDropdown';
+import Footer from '../components/Footer';
 
 /* ──── DATA ──── */
 const features = [
@@ -30,6 +32,17 @@ const steps = [
 const LandingNav = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  
+  // Robust check for user session
+  const userStr = localStorage.getItem('user');
+  let user = null;
+  try {
+    if (userStr && userStr !== 'null' && userStr !== 'undefined') {
+      user = JSON.parse(userStr);
+    }
+  } catch (e) {
+    user = null;
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -38,13 +51,14 @@ const LandingNav = () => {
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-dark border-b border-white/6 shadow-lg shadow-black/20' : 'bg-transparent'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-dark/70 backdrop-blur-2xl border-b border-white/6 shadow-xl shadow-black/40' : 'bg-transparent py-2'}`}>
       <div className="max-w-7xl mx-auto px-6 md:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
+        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2.5 group relative">
+          <div className="absolute -inset-2 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/50 transition-all duration-300 relative z-10">
             <Heart size={16} className="text-white fill-white" />
           </div>
-          <span className="font-bold text-base gradient-text">AI Memory Companion</span>
+          <span className="font-bold text-base gradient-text group-hover:brightness-125 transition-all">AI Memory Companion</span>
         </Link>
 
         {/* Desktop Nav */}
@@ -57,10 +71,24 @@ const LandingNav = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/login" className="text-sm font-medium text-gray-400 hover:text-white transition-colors px-3 py-1.5">Login</Link>
-          <Link to="/signup">
-            <Button size="sm" className="shadow-lg shadow-primary/20">Get Started <ArrowRight size={14} /></Button>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/dashboard">
+                <Button size="sm" className="shadow-lg shadow-primary/20 bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all">
+                  Go to Dashboard <LayoutDashboard size={14} className="ml-1" />
+                </Button>
+              </Link>
+              <div className="h-6 w-px bg-white/10 mx-1" />
+              <ProfileDropdown />
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="text-sm font-medium text-gray-400 hover:text-white transition-colors px-3 py-1.5">Login</Link>
+              <Link to="/signup">
+                <Button size="sm" className="shadow-lg shadow-primary/20">Get Started <ArrowRight size={14} /></Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -82,8 +110,16 @@ const LandingNav = () => {
             </a>
           ))}
           <div className="flex gap-3 pt-2">
-            <Link to="/login" className="flex-1"><Button variant="secondary" size="sm" className="w-full">Login</Button></Link>
-            <Link to="/signup" className="flex-1"><Button size="sm" className="w-full">Sign Up</Button></Link>
+            {user ? (
+              <Link to="/dashboard" className="w-full">
+                <Button size="sm" className="w-full">Go to Dashboard</Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="flex-1"><Button variant="secondary" size="sm" className="w-full">Login</Button></Link>
+                <Link to="/signup" className="flex-1"><Button size="sm" className="w-full">Sign Up</Button></Link>
+              </>
+            )}
           </div>
         </motion.div>
       )}
@@ -114,9 +150,10 @@ const Landing = () => {
                 <Sparkles size={12} /> Emotionally Intelligent AI
               </motion.div>
 
-              <h1 className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.08] tracking-tight mb-6">
-                Preserve <span className="gradient-text">Memories</span>.<br />
-                Heal with <span className="gradient-text-warm">Warmth</span>.
+              <h1 className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.08] tracking-tight mb-6 relative">
+                <span className="absolute -inset-x-6 -inset-y-4 bg-primary/20 blur-3xl rounded-full opacity-50 pointer-events-none" />
+                <span className="relative">Preserve <span className="gradient-text">Memories</span>.<br />
+                Heal with <span className="gradient-text-warm">Warmth</span>.</span>
               </h1>
 
               <p className="text-lg text-gray-400 leading-relaxed mb-10 max-w-lg">
@@ -124,14 +161,14 @@ const Landing = () => {
                 manage cherished memories, and find comfort through AI-driven healing conversations.
               </p>
 
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4 relative">
                 <Link to="/signup">
-                  <Button size="lg" className="shadow-xl shadow-primary/25 group">
-                    Create a Memorial <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  <Button size="lg" className="shadow-2xl shadow-primary/40 group bg-gradient-to-r from-primary to-indigo hover:from-primary-light hover:to-indigo-light text-white px-8">
+                    Create a Memorial <ArrowRight size={18} className="group-hover:translate-x-1.5 transition-transform" />
                   </Button>
                 </Link>
                 <a href="#how-it-works">
-                  <Button variant="secondary" size="lg">
+                  <Button variant="secondary" size="lg" className="glass hover:bg-white/10 px-8 transition-colors">
                     See How It Works
                   </Button>
                 </a>
@@ -163,7 +200,7 @@ const Landing = () => {
                 {/* Main card */}
                 <div className="glass-card rounded-3xl border border-white/8 shadow-2xl shadow-black/50 overflow-hidden glow-primary-sm">
                   {/* Header */}
-                  <div className="flex items-center gap-3 p-5 border-b border-white/6">
+                  <div className="flex items-center gap-3 p-5 border-b border-white/6 bg-white/5">
                     <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
                       <Heart size={18} className="text-white fill-white" />
                     </div>
@@ -171,7 +208,7 @@ const Landing = () => {
                       <p className="text-sm font-semibold text-white">Grandma Rose</p>
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[11px] text-gray-500">AI Companion active</span>
+                        <span className="text-[11px] text-gray-400">AI Companion active</span>
                       </div>
                     </div>
                   </div>
@@ -358,33 +395,7 @@ const Landing = () => {
       </section>
 
       {/* ═══════════ FOOTER ═══════════ */}
-      <footer className="border-t border-white/6 py-12 px-6 md:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-10">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center">
-                <Heart size={16} className="text-white fill-white" />
-              </div>
-              <span className="font-bold gradient-text">AI Memory Companion</span>
-            </Link>
-
-            <nav className="flex flex-wrap gap-6 text-sm text-gray-500">
-              {[['#features','Features'],['#how-it-works','How It Works'],['#testimonials','Testimonials'],['/about','About'],['/contact','Contact']].map(([href, label]) => (
-                href.startsWith('#')
-                  ? <a key={href} href={href} className="hover:text-white transition-colors">{label}</a>
-                  : <Link key={href} to={href} className="hover:text-white transition-colors">{label}</Link>
-              ))}
-            </nav>
-
-            <div className="flex gap-4 text-sm text-gray-600">
-              <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-gray-300 transition-colors">Terms</a>
-            </div>
-          </div>
-          <div className="section-divider mb-6" />
-          <p className="text-center text-xs text-gray-600">© 2026 AI Memory Companion. Built with love for healing hearts.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

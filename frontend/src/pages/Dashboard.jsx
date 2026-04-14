@@ -3,18 +3,19 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Heart, MessageCircle, Calendar, TrendingUp, Clock, BookOpen,
-  Plus, Sparkles, ArrowRight, Zap, Activity
+  Plus, Sparkles, ArrowRight, Zap, Activity, Mail, Info, Shield, Brain
 } from 'lucide-react';
 import Button from '../components/Button';
 import { memoryAPI, profileAPI } from '../services/api';
 
 const StatCard = ({ label, value, icon: Icon, color, bg, trend }) => (
   <motion.div
-    whileHover={{ y: -4, scale: 1.01 }}
-    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-    className="glass-card rounded-3xl border border-white/6 p-6 hover:border-primary/20 transition-all duration-300"
+    whileHover={{ y: -6, scale: 1.02 }}
+    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+    className="glass-card rounded-3xl border border-white/6 p-6 hover:border-primary/30 hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all duration-300 relative overflow-hidden group"
   >
-    <div className="flex items-start justify-between mb-4">
+    <div className="absolute -right-10 -top-10 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
+    <div className="flex items-start justify-between mb-4 relative z-10">
       <div className={`w-12 h-12 ${bg} rounded-2xl flex items-center justify-center`}>
         <Icon size={22} className={color} />
       </div>
@@ -252,6 +253,56 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Dashboard Footer: About & Contact ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-10 mt-10 border-t border-white/5">
+        {/* About Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="glass-card rounded-3xl border border-white/6 p-8 flex flex-col gap-5 hover:border-primary/20 transition-all duration-300"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shadow-lg shadow-primary/5">
+              <Info size={22} className="text-primary" />
+            </div>
+            <h2 className="text-xl font-black text-white">About Us</h2>
+          </div>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            AI Memory Companion is an emotionally intelligent space built to honor loved ones, preserve memories, and find comfort through safe, ethical AI. We blend technology with empathy to support your unique healing journey.
+          </p>
+          <Link to="/about" className="mt-auto">
+            <Button variant="secondary" size="sm" className="group">
+              Learn Our Story <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+        </motion.div>
+
+        {/* Contact Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="glass-card rounded-3xl border border-white/6 p-8 flex flex-col gap-5 hover:border-primary/20 transition-all duration-300"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shadow-lg shadow-emerald-500/5`}>
+              <Mail size={22} className="text-emerald-400" />
+            </div>
+            <h2 className="text-xl font-black text-white">Contact Us</h2>
+          </div>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Whether you have a question, feedback, or just need someone to talk to, our team is here for you. We read every message and respond with care and compassion within 24 hours.
+          </p>
+          <Link to="/contact" className="mt-auto">
+            <Button variant="secondary" size="sm" className="group">
+              Get in Touch <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     </div>
   );

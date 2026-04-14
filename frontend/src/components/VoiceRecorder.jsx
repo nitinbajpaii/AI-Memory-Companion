@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Square, Send, Trash2, Loader2, Play, Pause } from 'lucide-react';
+import { Mic, Square, Send, Trash2, Loader2, Play, Pause, Upload } from 'lucide-react';
 import { voiceAPI } from '../services/api';
 
 // ─── VoiceRecorder ────────────────────────────────────────────────────────────
@@ -12,11 +12,18 @@ import { voiceAPI } from '../services/api';
 //   voiceType — 'male' | 'female'
 // ─────────────────────────────────────────────────────────────────────────────
 
-const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = 'female' }) => {
+const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = 'female', onStateChange }) => {
   const [state, setState]         = useState('idle');       // idle|recording|previewing|processing
   const [duration, setDuration]   = useState(0);
   const [audioUrl, setAudioUrl]   = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Notify parent when state changes
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange(state);
+    }
+  }, [state, onStateChange]);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef        = useRef([]);
@@ -59,15 +66,17 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
         setState('previewing');
-        stream.getTracks().forEach(t => t.stop());
+        if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       };
 
       recorder.start(200); // collect chunks every 200ms
       setState('recording');
       setDuration(0);
-
+      
+      clearInterval(timerRef.current);
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
     } catch (err) {
+      console.error('Microphone error:', err);
       onError?.('Microphone access denied. Please allow microphone permissions.');
     }
   };
@@ -75,7 +84,9 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
   // ── Stop recording ───────────────────────────────────────────────────────
   const stopRecording = () => {
     clearInterval(timerRef.current);
-    mediaRecorderRef.current?.stop();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
   };
 
   // ── Discard ──────────────────────────────────────────────────────────────
@@ -100,6 +111,33 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
     }
   };
 
+  // ── Handle file upload ───────────────────────────────────────────────────
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset recorder if active
+    stopRecording();
+    
+    // Validate format
+    const validFormats = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-m4a', 'audio/m4a', 'audio/webm', 'audio/ogg'];
+    const validExtensions = ['.mp3', '.wav', '.m4a', '.webm', '.ogg'];
+    
+    const isValidType = validFormats.includes(file.type);
+    const isValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+    if (!isValidType && !isValidExt) {
+      onError?.('Invalid audio format. Please upload MP3, WAV, M4A, or WebM.');
+      return;
+    }
+
+    blobRef.current = file;
+    const url = URL.createObjectURL(file);
+    setAudioUrl(url);
+    setState('previewing');
+    setDuration(0); // Will update once audio loads metadata
+  };
+
   // ── Send voice note ──────────────────────────────────────────────────────
   const sendVoice = async () => {
     if (!blobRef.current) return;
@@ -107,7 +145,10 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
 
     try {
       const formData = new FormData();
-      formData.append('audio', blobRef.current, `voice_${Date.now()}.webm`);
+      // If it's a File object (uploaded), it has a 'name' property
+      const isUploadedFile = blobRef.current instanceof File;
+      const filename = isUploadedFile ? blobRef.current.name : `voice_${Date.now()}.webm`;
+      formData.append('audio', blobRef.current, filename);
       formData.append('voiceType', voiceType);
 
       const { data } = await voiceAPI.transcribe(formData);
@@ -128,20 +169,35 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
-  // ── IDLE: just the mic button ────────────────────────────────────────────
+  // ── IDLE: just the mic button + upload button ────────────────────────────
   if (state === 'idle') {
     return (
-      <motion.button
-        type="button"
-        disabled={disabled}
-        onClick={startRecording}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.92 }}
-        className={`mic-glow w-11 h-11 rounded-2xl bg-white/5 hover:bg-primary/15 border border-white/8 hover:border-primary/30 flex items-center justify-center text-gray-400 hover:text-primary transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed`}
-        title="Record voice message"
-      >
-        <Mic size={18} />
-      </motion.button>
+      <div className="flex items-center gap-2">
+        {/* Upload Audio */}
+        <label className={`w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/8 hover:border-white/20 flex items-center justify-center text-gray-400 hover:text-white transition-all shrink-0 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`} title="Upload audio file">
+          <Upload size={16} />
+          <input
+            type="file"
+            accept="audio/mp3, audio/wav, audio/m4a, audio/webm, audio/ogg"
+            className="hidden"
+            onChange={handleFileUpload}
+            disabled={disabled}
+          />
+        </label>
+        
+        {/* Record Audio */}
+        <motion.button
+          type="button"
+          disabled={disabled}
+          onClick={startRecording}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
+          className={`mic-glow w-11 h-11 rounded-2xl bg-white/5 hover:bg-primary/15 border border-white/8 hover:border-primary/30 flex items-center justify-center text-gray-400 hover:text-primary transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed`}
+          title="Record voice message"
+        >
+          <Mic size={18} />
+        </motion.button>
+      </div>
     );
   }
 
@@ -196,6 +252,12 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
           ref={audioRef}
           src={audioUrl}
           onEnded={() => setIsPlaying(false)}
+          onLoadedMetadata={(e) => {
+            // Update duration for uploaded files if not already set by timer
+            if (duration === 0 && e.target.duration && e.target.duration !== Infinity) {
+              setDuration(Math.floor(e.target.duration));
+            }
+          }}
           className="hidden"
         />
 

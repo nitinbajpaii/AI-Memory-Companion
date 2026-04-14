@@ -12,6 +12,18 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 Unauthorized for session persistence
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authAPI = {
   login: (data) => API.post('/auth/login', data),
   signup: (data) => API.post('/auth/signup', data),

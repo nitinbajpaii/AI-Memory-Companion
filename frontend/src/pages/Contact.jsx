@@ -8,6 +8,7 @@ import {
 import Button from '../components/Button';
 import Input  from '../components/Input';
 import Footer from '../components/Footer';
+import ProfileDropdown from '../components/ProfileDropdown';
 
 /* ── Data ── */
 const contactInfo = [
@@ -47,20 +48,30 @@ const faqs = [
 ];
 
 /* ── Mini Nav (same as About page) ── */
-const MiniNav = () => (
-  <nav className="glass-dark border-b border-white/6 px-8 py-4 flex items-center justify-between sticky top-0 z-20">
-    <Link to="/" className="flex items-center gap-2.5 group">
-      <motion.div whileHover={{ scale: 1.1, rotate: -6 }} className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/25">
-        <Heart size={16} className="text-white fill-white" />
-      </motion.div>
-      <span className="font-black gradient-text text-sm">AI Memory Companion</span>
-    </Link>
-    <div className="flex items-center gap-3">
-      <Link to="/login"  className="text-sm text-gray-400 hover:text-white transition-colors">Login</Link>
-      <Link to="/signup"><Button size="sm">Get Started</Button></Link>
-    </div>
-  </nav>
-);
+const MiniNav = () => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  return (
+    <nav className="bg-dark/70 backdrop-blur-2xl border-b border-white/6 px-8 py-4 flex items-center justify-between sticky top-0 z-20 shadow-xl shadow-black/40">
+      <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2.5 group relative">
+        <div className="absolute -inset-2 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <motion.div whileHover={{ scale: 1.1, rotate: -6 }} className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-primary/50 transition-all duration-300 relative z-10">
+          <Heart size={16} className="text-white fill-white" />
+        </motion.div>
+        <span className="font-black gradient-text text-sm group-hover:brightness-125 transition-all">AI Memory Companion</span>
+      </Link>
+      <div className="flex items-center gap-3">
+        {user ? (
+          <ProfileDropdown />
+        ) : (
+          <>
+            <Link to="/login"  className="text-sm text-gray-400 hover:text-white transition-colors">Login</Link>
+            <Link to="/signup"><Button size="sm">Get Started</Button></Link>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+};
 
 /* ── Contact Page ── */
 const Contact = () => {

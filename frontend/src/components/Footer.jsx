@@ -29,7 +29,9 @@ const socialsRaw = [
   { label: 'Docs',     href: '#',                            icon: ExternalLink },
 ];
 
-const Footer = () => (
+const Footer = () => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  return (
   <footer className="glass-dark border-t border-white/6 mt-auto">
 
     {/* ── CTA strip ── */}
@@ -55,7 +57,7 @@ const Footer = () => (
 
       {/* Brand column */}
       <div className="col-span-2">
-        <Link to="/" className="flex items-center gap-2.5 mb-5 w-fit group">
+        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2.5 mb-5 w-fit group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
             <Heart size={18} className="text-white fill-white" />
           </div>
@@ -92,7 +94,7 @@ const Footer = () => (
               <li key={label}>
                 <Link
                   to={to}
-                  className="text-sm text-gray-500 hover:text-gray-200 transition-colors"
+                  className="text-sm text-gray-500 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-200 inline-block"
                 >
                   {label}
                 </Link>
@@ -118,6 +120,7 @@ const Footer = () => (
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 export default Footer;

@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { name: 'Home',        path: '/',           icon: Home,            color: 'text-primary'    },
-  { name: 'Dashboard',   path: '/dashboard', icon: LayoutDashboard, color: 'text-violet-400'  },
+  { name: 'Home',        path: '/dashboard',  icon: Home,            color: 'text-primary'    },
   { name: 'Memory Chat', path: '/chat',       icon: MessageCircle,   color: 'text-blue-400'   },
   { name: 'Memories',    path: '/memories',   icon: Heart,           color: 'text-pink-400'   },
   { name: 'Loved One',   path: '/profile',    icon: User,            color: 'text-emerald-400'},
@@ -26,11 +25,21 @@ const itemVariants = {
 
 const SidebarContent = ({ onClose }) => {
   const navigate = useNavigate();
-  const user     = JSON.parse(localStorage.getItem('user'));
+  
+  // Robust check for user session
+  const userStr = localStorage.getItem('user');
+  let user = null;
+  try {
+    if (userStr && userStr !== 'null' && userStr !== 'undefined') {
+      user = JSON.parse(userStr);
+    }
+  } catch (e) {
+    user = null;
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('user');
-    navigate('/');
+    window.location.href = '/';
   };
 
   return (
@@ -38,19 +47,20 @@ const SidebarContent = ({ onClose }) => {
 
       {/* ── Brand ── */}
       <div className="flex items-center justify-between px-5 py-6">
-        <div className="flex items-center gap-3">
+        <NavLink to="/dashboard" className="flex items-center gap-3 group relative">
+          <div className="absolute -inset-2 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
           <motion.div
             animate={{ rotate: [0, -6, 6, -3, 0] }}
             transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 5 }}
-            className="w-9 h-9 rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30"
+            className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/50 transition-all duration-300 relative z-10"
           >
             <Heart size={18} className="text-white fill-white" />
           </motion.div>
-          <div>
+          <div className="group-hover:brightness-125 transition-all">
             <span className="font-black text-base gradient-text leading-none">AI Memory</span>
-            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Companion</p>
+            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest leading-none mt-0.5">Companion</p>
           </div>
-        </div>
+        </NavLink>
 
         {onClose && (
           <motion.button
@@ -81,15 +91,23 @@ const SidebarContent = ({ onClose }) => {
                   to={item.path}
                   onClick={onClose}
                   className={({ isActive }) => [
-                    'flex items-center justify-between px-3.5 py-3 rounded-2xl transition-all duration-200 group relative',
+                    'flex items-center justify-between px-3.5 py-3 rounded-2xl transition-all duration-200 group relative overflow-hidden',
                     isActive
-                      ? 'bg-gradient-to-r from-primary/15 to-indigo/5 border border-primary/20 text-white shadow-sm'
+                      ? 'bg-gradient-to-r from-primary/20 to-indigo/10 border border-primary/30 text-white shadow-[0_0_15px_rgba(139,92,246,0.15)]'
                       : 'text-gray-500 hover:text-gray-100 hover:bg-white/5',
                   ].join(' ')}
                 >
                   {({ isActive }) => (
                     <>
-                      <div className="flex items-center gap-3">
+                      {isActive && (
+                        <motion.div
+                          layoutId="sidebar-active-bg"
+                          className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none"
+                          initial={false}
+                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        />
+                      )}
+                      <div className="flex items-center gap-3 relative z-10">
                         <Icon
                           size={18}
                           className={`transition-all duration-200 ${

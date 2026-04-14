@@ -49,10 +49,37 @@ const PageLoader = () => (
   </div>
 );
 
-/* ── Route guard ── */
+/* ── Route guards ── */
 const ProtectedRoute = ({ children }) => {
-  const user = localStorage.getItem('user');
-  return user ? children : <Navigate to="/login" replace />;
+  const userStr = localStorage.getItem('user');
+  
+  // Robust check for valid JSON user object
+  let user = null;
+  try {
+    if (userStr && userStr !== 'null' && userStr !== 'undefined') {
+      user = JSON.parse(userStr);
+    }
+  } catch (e) {
+    console.error('Invalid user session found');
+  }
+
+  return user && user.token ? children : <Navigate to="/login" replace />;
+};
+
+const PublicRoute = ({ children, redirectTo = "/dashboard" }) => {
+  const userStr = localStorage.getItem('user');
+  
+  // Robust check for valid JSON user object
+  let user = null;
+  try {
+    if (userStr && userStr !== 'null' && userStr !== 'undefined') {
+      user = JSON.parse(userStr);
+    }
+  } catch (e) {
+    // Not logged in or invalid session
+  }
+
+  return user && user.token ? <Navigate to={redirectTo} replace /> : children;
 };
 
 /* ── Inner router — needs useLocation so must be child of <Router> ── */
@@ -66,9 +93,13 @@ const AppRoutes = () => {
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             {/* Public routes */}
-            <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
-            <Route path="/login"   element={<PageTransition><Login /></PageTransition>} />
-            <Route path="/signup"  element={<PageTransition><Signup /></PageTransition>} />
+            <Route path="/" element={
+              <PublicRoute redirectTo="/dashboard">
+                <PageTransition><Landing /></PageTransition>
+              </PublicRoute>
+            } />
+            <Route path="/login"   element={<PublicRoute><PageTransition><Login /></PageTransition></PublicRoute>} />
+            <Route path="/signup"  element={<PublicRoute><PageTransition><Signup /></PageTransition></PublicRoute>} />
             <Route path="/about"   element={<PageTransition><About /></PageTransition>} />
             <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
 
