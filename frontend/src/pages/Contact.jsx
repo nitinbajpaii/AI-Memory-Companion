@@ -15,7 +15,7 @@ const contactInfo = [
   {
     icon: Mail,
     label: 'Email Us',
-    value: 'support@aimemorycompanion.com',
+    value: 'support.aimemorycompanion@gmail.com',
     sub: 'We reply within 24 hours',
     color: 'text-violet-400',
     bg: 'bg-violet-500/10',
@@ -122,7 +122,7 @@ const Contact = () => {
 
     try {
       const formData = new FormData();
-      formData.append('access_key', '8d1dc784-cee7-43f7-83c4-77386980a14b');
+      formData.append('access_key', '75a575c5-ebd9-478c-bcb0-b5070a81dcb6');
       formData.append('name', form.name);
       formData.append('email', form.email);
       formData.append('subject', form.subject);
