@@ -25,7 +25,7 @@ const footerNav = {
 
 const socialsRaw = [
   { label: 'Website',  href: '#',                            icon: Globe },
-  { label: 'Email',    href: 'mailto:support@aimemory.app',  icon: Mail },
+  { label: 'Email',    href: 'mailto:support.aimemorycompanion.com',  icon: Mail },
   { label: 'Docs',     href: '#',                            icon: ExternalLink },
 ];
 
