@@ -20,10 +20,13 @@ async function transcribeAudio(audioBuffer, mimeType) {
   // gemini-1.5-flash supports audio inlineData
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
+  // Clean mimeType: 'audio/webm;codecs=opus' -> 'audio/webm'
+  const baseMimeType = (mimeType || 'audio/webm').split(';')[0];
+
   const audioPart = {
     inlineData: {
       data: audioBuffer.toString('base64'),
-      mimeType: mimeType || 'audio/webm',
+      mimeType: baseMimeType,
     },
   };
 
@@ -39,6 +42,9 @@ async function transcribeAudio(audioBuffer, mimeType) {
     return text;
   } catch (err) {
     console.error('[STT] Gemini Transcription error:', err.message);
+    if (err.message.includes('safety') || err.message.includes('blocked')) {
+      throw new Error('Transcription blocked by safety filters. Please speak appropriately.');
+    }
     throw err;
   }
 }
