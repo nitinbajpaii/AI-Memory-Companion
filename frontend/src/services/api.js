@@ -30,8 +30,21 @@ export const profileAPI = {
 
 export const memoryAPI = {
   getMemories: (userId) => API.get(`/memory/${userId}`),
-  addMemory: (data) => API.post('/memory/add', data),
-  deleteMemory: (id) => API.delete(`/memory/${id}`),
+  addMemory:   (data)   => API.post('/memory/add', data),
+  deleteMemory:(id)     => API.delete(`/memory/${id}`),
+};
+
+export const reviewsAPI = {
+  getReviews:    ()     => API.get('/reviews'),
+  submitReview:  (data) => API.post('/reviews', data),
+};
+
+export const voiceAPI = {
+  transcribe: (formData) =>
+    API.post('/voice/transcribe', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60_000, // voice processing can take up to 60s
+    }),
 };
 
 export default API;

@@ -80,6 +80,19 @@ const Dashboard = () => {
     );
   }
 
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 5  ? 'Good night'    :
+    hour < 12 ? 'Good morning'  :
+    hour < 17 ? 'Good afternoon':
+    hour < 21 ? 'Good evening'  : 'Good night';
+
+  const greetingEmoji =
+    hour < 5  ? '🌙' :
+    hour < 12 ? '☀️'  :
+    hour < 17 ? '🌤️' :
+    hour < 21 ? '🌆' : '🌙';
+
   return (
     <div className="space-y-8">
       {/* ── Header ── */}
@@ -89,9 +102,12 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             className="text-3xl md:text-4xl font-black text-white mb-1"
           >
-            Good evening, {user?.name?.split(' ')[0]} 👋
+            {greeting}, {user?.name?.split(' ')[0]} {greetingEmoji}
           </motion.h1>
-          <p className="text-gray-500">Here's a look at your healing journey today.</p>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
+            className="text-gray-500">
+            Here's a look at your healing journey today.
+          </motion.p>
         </div>
         <Link to="/memories">
           <Button icon={<Plus size={16} />} className="shadow-lg shadow-primary/20">

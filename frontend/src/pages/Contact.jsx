@@ -1,188 +1,350 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Mail, MessageSquare, Link2, Share2, Send, Check, ChevronDown, ExternalLink } from 'lucide-react';
+import {
+  Heart, Mail, MessageSquare, Send, CheckCircle2,
+  MapPin, Clock, Phone, ArrowRight, Loader2, Sparkles,
+} from 'lucide-react';
 import Button from '../components/Button';
-import Input from '../components/Input';
+import Input  from '../components/Input';
 import Footer from '../components/Footer';
 
-const faqs = [
-  { q: 'Is this a replacement for therapy?', a: 'No. AI Memory Companion is a supportive tool for preserving memories and finding comfort. We always recommend professional grief counseling for clinical support.' },
-  { q: 'Who can see my memories?', a: 'Only you. Your memories are end-to-end encrypted and never shared with third parties or used to train AI models.' },
-  { q: 'What happens if I delete my account?', a: 'All your data — memories, conversations, and profiles — is permanently and immediately deleted from our servers.' },
-  { q: 'Is the AI pretending to be my loved one?', a: 'No. The AI uses your memories and profile information to provide empathetic, contextually aware conversations — but it never impersonates your loved one.' },
-  { q: 'How do I cancel or pause my account?', a: 'You can pause or delete your account anytime from Settings. There are no hidden cancellation fees.' },
+/* ── Data ── */
+const contactInfo = [
+  {
+    icon: Mail,
+    label: 'Email Us',
+    value: 'support@aimemorycompanion.com',
+    sub: 'We reply within 24 hours',
+    color: 'text-violet-400',
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-500/20',
+  },
+  {
+    icon: Clock,
+    label: 'Support Hours',
+    value: 'Monday – Saturday',
+    sub: '9 AM – 8 PM IST',
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20',
+  },
+  {
+    icon: MessageSquare,
+    label: 'Live Chat',
+    value: 'Real-time in-app chat',
+    sub: 'Available for Pro users',
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20',
+  },
 ];
 
-const FaqItem = ({ q, a }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div
-      className="glass-card rounded-2xl border border-white/6 overflow-hidden cursor-pointer hover:border-primary/15 transition-all"
-      onClick={() => setOpen(p => !p)}
-    >
-      <div className="flex items-center justify-between px-6 py-5">
-        <p className="text-sm font-semibold text-gray-200">{q}</p>
-        <ChevronDown size={16} className={`text-gray-500 shrink-0 ml-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </div>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <p className="px-6 pb-5 text-sm text-gray-500 leading-relaxed">{a}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
+const faqs = [
+  { q: 'Is my data safe?',          a: 'All data is encrypted end-to-end and stored on secure servers. You can delete everything at any time.' },
+  { q: 'Can I cancel anytime?',     a: 'Yes, cancel your subscription anytime with no questions asked and no hidden fees.' },
+  { q: 'Is the AI voice realistic?', a: 'We use ElevenLabs — one of the most realistic voice AI providers — to generate warm, natural-sounding replies.' },
+];
 
+/* ── Mini Nav (same as About page) ── */
+const MiniNav = () => (
+  <nav className="glass-dark border-b border-white/6 px-8 py-4 flex items-center justify-between sticky top-0 z-20">
+    <Link to="/" className="flex items-center gap-2.5 group">
+      <motion.div whileHover={{ scale: 1.1, rotate: -6 }} className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/25">
+        <Heart size={16} className="text-white fill-white" />
+      </motion.div>
+      <span className="font-black gradient-text text-sm">AI Memory Companion</span>
+    </Link>
+    <div className="flex items-center gap-3">
+      <Link to="/login"  className="text-sm text-gray-400 hover:text-white transition-colors">Login</Link>
+      <Link to="/signup"><Button size="sm">Get Started</Button></Link>
+    </div>
+  </nav>
+);
+
+/* ── Contact Page ── */
 const Contact = () => {
-  const [form, setForm]       = useState({ name: '', email: '', message: '' });
-  const [submitted, setSubmitted] = useState(false);
+  const [form,    setForm]    = useState({ name: '', email: '', subject: '', message: '' });
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error,   setError]   = useState('');
+  const [openFaq, setOpenFaq] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.name || !form.email || !form.message) {
+      setError('Please fill in all required fields.');
+      return;
+    }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
+    setError('');
+    // Simulate submission (replace with real API call)
+    await new Promise(r => setTimeout(r, 1600));
     setLoading(false);
-    setSubmitted(true);
+    setSuccess(true);
   };
 
   return (
     <div className="min-h-screen bg-dark text-white">
-      <nav className="glass-dark border-b border-white/6 px-8 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center">
-            <Heart size={16} className="text-white fill-white" />
-          </div>
-          <span className="font-bold gradient-text">AI Memory Companion</span>
-        </Link>
-        <div className="flex items-center gap-3">
-          <Link to="/login" className="text-sm text-gray-400 hover:text-white transition-colors">Login</Link>
-          <Link to="/signup"><Button size="sm">Get Started</Button></Link>
-        </div>
-      </nav>
+      <MiniNav />
 
-      <div className="max-w-6xl mx-auto px-6 md:px-8 py-20">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-6">Contact</span>
-          <h1 className="text-5xl md:text-6xl font-black mb-4">We're here to help</h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
-            Have a question, concern, or just want to share your experience? Reach out — we read every message.
+      {/* ── Hero ── */}
+      <section className="pt-20 pb-12 px-6 text-center relative overflow-hidden">
+        {/* Glow blobs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-10 right-1/4 w-64 h-64 bg-indigo/6 rounded-full blur-3xl pointer-events-none" />
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative z-10 max-w-2xl mx-auto"
+        >
+          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-6">
+            Get in Touch
+          </span>
+          <h1 className="text-4xl md:text-6xl font-black mb-5 leading-tight">
+            We're Here to <span className="gradient-text">Listen</span>
+          </h1>
+          <p className="text-gray-400 text-lg leading-relaxed">
+            Whether you have a question, feedback, or just need support — our team responds with care and compassion.
           </p>
         </motion.div>
+      </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
-          {/* Contact Form */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-            <div className="glass-card rounded-3xl border border-white/6 p-8">
-              <h2 className="text-2xl font-black text-white mb-6">Send us a message</h2>
+      <div className="max-w-6xl mx-auto px-6 md:px-8 pb-24 space-y-14">
 
-              {submitted ? (
+        {/* ── Contact Info Cards ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-5"
+        >
+          {contactInfo.map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <motion.div
+                key={i}
+                whileHover={{ y: -6, scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                className={`glass-card rounded-3xl border ${c.border} p-7 flex flex-col gap-4 hover:shadow-xl transition-all duration-300`}
+              >
+                <div className={`w-12 h-12 rounded-2xl ${c.bg} flex items-center justify-center`}>
+                  <Icon size={22} className={c.color} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{c.label}</p>
+                  <p className="font-bold text-white text-sm">{c.value}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">{c.sub}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+
+        {/* ── Main: Form + FAQ ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+
+          {/* Contact Form — takes 3 cols */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-3 glass-card rounded-3xl border border-white/8 p-8 md:p-10"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-11 h-11 rounded-2xl bg-primary/12 border border-primary/20 flex items-center justify-center">
+                <Send size={20} className="text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white">Send a Message</h2>
+                <p className="text-sm text-gray-500">We read every message personally.</p>
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {success ? (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-12 space-y-4"
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex flex-col items-center gap-5 py-16 text-center"
                 >
-                  <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
-                    <Check size={28} className="text-emerald-400" />
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, delay: 0.1 }}
+                    className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center"
+                  >
+                    <CheckCircle2 size={40} className="text-emerald-400" />
+                  </motion.div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white mb-2">Message Sent!</h3>
+                    <p className="text-gray-400 leading-relaxed">
+                      Thank you for reaching out. We'll get back to you within 24 hours.
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold text-white">Message Sent!</h3>
-                  <p className="text-gray-500 text-sm">We'll get back to you within 24 hours.</p>
-                  <Button variant="secondary" size="sm" onClick={() => { setSubmitted(false); setForm({ name: '', email: '', message: '' }); }}>
-                    Send Another
+                  <Button variant="outline" onClick={() => { setSuccess(false); setForm({ name:'', email:'', subject:'', message:'' }); }}>
+                    Send Another <ArrowRight size={15} />
                   </Button>
                 </motion.div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <Input
-                    label="Your Name"
-                    placeholder="Jane Smith"
-                    value={form.name}
-                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                    required
-                  />
-                  <Input
-                    label="Email Address"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={form.email}
-                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                    required
-                  />
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-300">Message</label>
-                    <textarea
+                <motion.form
+                  key="form"
+                  onSubmit={handleSubmit}
+                  className="space-y-5"
+                  autoComplete="off"
+                >
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="px-4 py-3 rounded-xl bg-red-500/8 border border-red-500/20 text-red-400 text-sm"
+                    >
+                      {error}
+                    </motion.div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Your Name"
+                      placeholder="Your name"
+                      value={form.name}
+                      onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                      autoComplete="off"
                       required
-                      rows={5}
-                      placeholder="Tell us how we can help…"
-                      value={form.message}
-                      onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
-                      className="w-full bg-white/4 border border-white/8 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all resize-none placeholder:text-gray-600 text-sm"
+                    />
+                    <Input
+                      label="Email Address"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={form.email}
+                      onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                      autoComplete="off"
+                      required
                     />
                   </div>
-                  <Button type="submit" size="lg" loading={loading} className="w-full shadow-lg shadow-primary/20">
-                    {!loading && (<>Send Message <Send size={16} /></>)}
+
+                  <Input
+                    label="Subject"
+                    placeholder="What's this about?"
+                    value={form.subject}
+                    onChange={e => setForm(p => ({ ...p, subject: e.target.value }))}
+                    autoComplete="off"
+                  />
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-300 ml-0.5 flex items-center gap-1">
+                      Message <span className="text-primary text-xs">*</span>
+                    </label>
+                    <textarea
+                      rows={5}
+                      placeholder="Share what's on your mind..."
+                      value={form.message}
+                      onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
+                      required
+                      autoComplete="off"
+                      className="w-full rounded-2xl bg-white/5 text-white placeholder:text-gray-600 border border-white/8 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 focus:bg-white/7 transition-all duration-200 px-4 py-3.5 text-sm resize-none"
+                    />
+                    <p className="text-[11px] text-gray-600 text-right">{form.message.length}/1000</p>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full shadow-xl shadow-primary/25"
+                    loading={loading}
+                  >
+                    {loading ? 'Sending…' : <><Send size={16} /> Send Message</>}
                   </Button>
-                </form>
+
+                  <p className="text-center text-xs text-gray-600 flex items-center justify-center gap-1.5">
+                    <Heart size={11} className="text-primary" />
+                    Your message is read with care
+                  </p>
+                </motion.form>
               )}
-            </div>
+            </AnimatePresence>
           </motion.div>
 
-          {/* Contact Info */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }} className="space-y-6">
-            <div className="glass-card rounded-3xl border border-white/6 p-8">
-              <h2 className="text-xl font-bold text-white mb-6">Get in touch</h2>
-              <div className="space-y-5">
-                {[
-                  { icon: Mail,          label: 'Email support',    value: 'support@aimemory.app',        href: 'mailto:support@aimemory.app' },
-                  { icon: Link2,         label: 'GitHub',           value: 'github.com/ai-memory-app',    href: '#' },
-                  { icon: Share2,        label: 'Twitter / X',      value: '@AiMemoryApp',                href: '#' },
-                  { icon: MessageSquare, label: 'Live chat',        value: 'Available 9am–6pm IST',       href: '#' },
-                ].map(({ icon: Icon, label, value, href }) => (
-                  <a key={label} href={href} className="flex items-center gap-4 p-4 rounded-2xl bg-white/3 hover:bg-white/6 border border-white/4 hover:border-primary/15 transition-all group">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon size={16} className="text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{label}</p>
-                      <p className="text-sm text-gray-300 group-hover:text-white transition-colors">{value}</p>
-                    </div>
-                    <ExternalLink size={13} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-                  </a>
+          {/* Right Column: FAQ + CTA */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.25 }}
+            className="lg:col-span-2 space-y-6"
+          >
+            {/* FAQ */}
+            <div className="glass-card rounded-3xl border border-white/8 p-7">
+              <div className="flex items-center gap-2.5 mb-6">
+                <Sparkles size={18} className="text-primary" />
+                <h3 className="font-black text-white text-lg">Quick Answers</h3>
+              </div>
+
+              <div className="space-y-2">
+                {faqs.map((faq, i) => (
+                  <div key={i} className="rounded-2xl border border-white/6 overflow-hidden">
+                    <button
+                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                      className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-white/3 transition-all group"
+                    >
+                      <span className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors">
+                        {faq.q}
+                      </span>
+                      <motion.span
+                        animate={{ rotate: openFaq === i ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-gray-500 text-base shrink-0 ml-2"
+                      >
+                        ↓
+                      </motion.span>
+                    </button>
+
+                    <AnimatePresence>
+                      {openFaq === i && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.22, ease: 'easeInOut' }}
+                          className="overflow-hidden"
+                        >
+                          <p className="text-sm text-gray-400 leading-relaxed px-4 pb-4 border-t border-white/5 pt-3">
+                            {faq.a}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 ))}
               </div>
             </div>
 
-            <div className="glass-card rounded-3xl border border-emerald-500/15 bg-emerald-500/3 p-6 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
-                <Check size={20} className="text-emerald-400" />
+            {/* CTA Card */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 280 }}
+              className="glass-card rounded-3xl border border-primary/20 p-7 bg-gradient-to-br from-primary/8 to-indigo/4 text-center"
+            >
+              <div className="w-14 h-14 rounded-3xl bg-primary/15 border border-primary/20 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/10">
+                <Heart size={26} className="text-primary fill-primary/30" />
               </div>
-              <p className="text-white font-bold mb-1">24-hour response guarantee</p>
-              <p className="text-gray-500 text-sm">We promise to respond to every inquiry within 24 hours, no matter when you reach out.</p>
-            </div>
+              <h4 className="text-lg font-black text-white mb-2">Begin Your Healing</h4>
+              <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+                Join thousands of families finding comfort through meaningful conversations.
+              </p>
+              <Link to="/signup">
+                <Button className="w-full shadow-lg shadow-primary/20">
+                  Start for Free <ArrowRight size={15} />
+                </Button>
+              </Link>
+            </motion.div>
           </motion.div>
         </div>
-
-        {/* FAQ Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-black text-white text-center mb-10">Frequently Asked Questions</h2>
-          <div className="space-y-3 max-w-3xl mx-auto">
-            {faqs.map((faq, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-                <FaqItem {...faq} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
       </div>
+
       <Footer />
     </div>
   );

@@ -7,14 +7,16 @@ dotenv.config();
 const connectDB = require('./config/db');
 
 // Routes
-const authRoutes = require('./routes/authRoutes');
-const chatRoutes = require('./routes/chatRoutes');
-const memoryRoutes = require('./routes/memoryRoutes');
+const authRoutes    = require('./routes/authRoutes');
+const chatRoutes    = require('./routes/chatRoutes');
+const memoryRoutes  = require('./routes/memoryRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const reviewRoutes  = require('./routes/reviewRoutes');
+const voiceRoutes   = require('./routes/voiceRoutes');
 const { checkDbConnection } = require('./middleware/dbStatus');
 
 // Startup Check
-const requiredEnv = ['GEMINI_API_KEY', 'JWT_SECRET', 'MONGO_URI'];
+const requiredEnv = ['GEMINI_API_KEY', 'JWT_SECRET', 'MONGO_URI', 'ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID_MALE', 'ELEVENLABS_VOICE_ID_FEMALE'];
 const missingEnv = requiredEnv.filter(env => !process.env[env] || process.env[env].includes('your_') || process.env[env].includes('<'));
 
 if (missingEnv.length > 0) {
@@ -61,10 +63,12 @@ app.use(express.json());
 app.use('/api', checkDbConnection);
 
 // API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/memory', memoryRoutes);
+app.use('/api/auth',    authRoutes);
+app.use('/api/chat',    chatRoutes);
+app.use('/api/memory',  memoryRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/voice',   voiceRoutes);
 
 app.get('/', (req, res) => {
   res.send('AI Memory Companion API is running...');

@@ -1,18 +1,20 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 const Input = ({
   label,
-  type = 'text',
+  type        = 'text',
   placeholder,
   value,
   onChange,
-  className = '',
+  className   = '',
   error,
   helperText,
-  required = false,
-  icon = null,
+  required    = false,
+  icon        = null,
   rightElement = null,
-  disabled = false,
+  disabled    = false,
+  autoComplete,
   ...rest
 }) => {
   return (
@@ -26,7 +28,7 @@ const Input = ({
 
       <div className="relative group">
         {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors duration-200 pointer-events-none">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors duration-200 pointer-events-none z-10">
             {icon}
           </div>
         )}
@@ -38,32 +40,43 @@ const Input = ({
           onChange={onChange}
           required={required}
           disabled={disabled}
+          autoComplete={autoComplete || 'off'}
           className={[
             'w-full rounded-2xl bg-white/5 text-white placeholder:text-gray-600',
             'border transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50',
+            'focus:bg-white/7 focus:shadow-lg focus:shadow-primary/10',
             'disabled:opacity-50 disabled:cursor-not-allowed',
+            'text-sm',
             icon ? 'pl-12 pr-4 py-3.5' : 'px-4 py-3.5',
             rightElement ? 'pr-12' : '',
             error
               ? 'border-red-500/50 ring-1 ring-red-500/30 bg-red-500/5'
-              : 'border-white/8 hover:border-white/15',
+              : 'border-white/8 hover:border-white/20',
           ].join(' ')}
           {...rest}
         />
 
         {rightElement && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
             {rightElement}
           </div>
         )}
+
+        {/* Subtle glow layer on focus — pure CSS pseudo element via group */}
+        <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-200"
+          style={{ boxShadow: '0 0 0 3px rgba(139,92,246,0.12)' }} />
       </div>
 
       {error && (
-        <span className="text-xs text-red-400 ml-0.5 flex items-center gap-1">
+        <motion.span
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xs text-red-400 ml-0.5 flex items-center gap-1"
+        >
           <span className="w-1 h-1 rounded-full bg-red-400 inline-block" />
           {error}
-        </span>
+        </motion.span>
       )}
       {helperText && !error && (
         <span className="text-xs text-gray-500 ml-0.5">{helperText}</span>

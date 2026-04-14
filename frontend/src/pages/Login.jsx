@@ -132,25 +132,27 @@ const Login = () => {
             </motion.div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5" autoComplete="off">
             <Input
               label="Email Address"
               type="email"
-              placeholder="you@example.com"
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               icon={<Mail size={16} />}
               required
+              autoComplete="off"
             />
 
             <Input
               label="Password"
               type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••••"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               icon={<Lock size={16} />}
               required
+              autoComplete="new-password"
               rightElement={
                 <button
                   type="button"

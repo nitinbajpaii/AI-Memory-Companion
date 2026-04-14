@@ -6,6 +6,7 @@ import {
   ArrowRight, Mic, Lock, Brain, Menu, X, Clock, Users
 } from 'lucide-react';
 import Button from '../components/Button';
+import ReviewSection from '../components/ReviewSection';
 
 /* ──── DATA ──── */
 const features = [
@@ -23,11 +24,7 @@ const steps = [
   { n: '03', title: 'Start a Conversation',        desc: 'Chat, share a voice note, or revisit memories anytime. The AI is always ready to listen.' },
 ];
 
-const testimonials = [
-  { name: 'Sarah M.',      role: 'Lost her mother last year',    rating: 5, quote: 'AI Memory Companion gave me a safe space to grieve. It felt like talking to someone who truly understood my pain.' },
-  { name: 'James T.',      role: 'Remembering his grandfather',  rating: 5, quote: 'Sharing memories of Grandpa with the AI brought so much comfort. It helps me keep his spirit alive every day.' },
-  { name: 'Priya K.',      role: 'Processing loss of a friend',  rating: 5, quote: 'I was skeptical at first, but the emotional depth surprised me. It never felt robotic — always warm and human.' },
-];
+
 
 /* ──── NAVBAR ──── */
 const LandingNav = () => {
@@ -315,49 +312,8 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ═══════════ TESTIMONIALS ═══════════ */}
-      <section id="testimonials" className="py-24 md:py-32 px-6 md:px-8 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/3 to-transparent pointer-events-none" />
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">Testimonials</span>
-            <h2 className="text-4xl md:text-5xl font-black mb-4">Stories of Healing</h2>
-            <p className="text-gray-400 text-lg max-w-xl mx-auto">Real families, real comfort, real healing.</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -4 }}
-                className="glass-card rounded-3xl border border-white/6 hover:border-primary/20 p-8 flex flex-col gap-6 transition-all duration-300"
-              >
-                {/* Stars */}
-                <div className="flex gap-1">
-                  {[...Array(t.rating)].map((_, j) => (
-                    <Star key={j} size={14} className="text-amber-400 fill-amber-400" />
-                  ))}
-                </div>
-                <p className="text-gray-300 italic leading-relaxed flex-1">"{t.quote}"</p>
-                <div className="flex items-center gap-3 pt-4 border-t border-white/6">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/40 to-indigo/40 flex items-center justify-center text-white font-bold">
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white">{t.name}</p>
-                    <p className="text-xs text-gray-500">{t.role}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ═══════════ DYNAMIC REVIEWS ═══════════ */}
+      <ReviewSection />
 
       {/* ═══════════ ABOUT ═══════════ */}
       <section id="about" className="py-24 md:py-32 px-6 md:px-8">

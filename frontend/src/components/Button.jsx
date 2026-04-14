@@ -1,77 +1,82 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 const Button = ({
   children,
   onClick,
-  type = 'button',
+  type    = 'button',
   variant = 'primary',
-  size = 'md',
+  size    = 'md',
   className = '',
-  disabled = false,
-  loading = false,
-  icon = null,
+  disabled  = false,
+  loading   = false,
+  icon      = null,
 }) => {
-  const base =
-    'inline-flex items-center justify-center gap-2 font-semibold rounded-2xl transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-transparent';
+  const base = [
+    'inline-flex items-center justify-center gap-2',
+    'font-semibold rounded-2xl',
+    'transition-all duration-200',
+    'active:scale-95',
+    'disabled:opacity-50 disabled:cursor-not-allowed',
+    'focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-transparent',
+    'select-none',
+  ].join(' ');
 
   const sizes = {
-    sm:  'px-4 py-2 text-sm',
-    md:  'px-6 py-2.5 text-sm',
-    lg:  'px-8 py-3.5 text-base',
-    xl:  'px-10 py-4 text-lg',
+    sm: 'px-4 py-2 text-sm',
+    md: 'px-6 py-2.5 text-sm',
+    lg: 'px-8 py-3.5 text-base',
+    xl: 'px-10 py-4 text-lg',
   };
 
   const variants = {
     primary: [
-      'bg-gradient-to-r from-primary to-indigo',
-      'text-white',
+      'bg-gradient-to-r from-primary to-indigo text-white',
       'shadow-lg shadow-primary/30',
-      'hover:shadow-xl hover:shadow-primary/40',
+      'hover:shadow-xl hover:shadow-primary/50',
       'hover:brightness-110',
       'border border-primary/20',
     ].join(' '),
 
     secondary: [
-      'bg-white/6 hover:bg-white/10',
-      'text-white',
-      'border border-white/10 hover:border-white/20',
+      'bg-white/6 hover:bg-white/10 text-white',
+      'border border-white/10 hover:border-white/25',
       'backdrop-blur-md',
+      'hover:shadow-lg hover:shadow-black/20',
     ].join(' '),
 
     outline: [
-      'bg-transparent',
-      'border-2 border-primary/60',
-      'text-primary',
+      'bg-transparent border-2 border-primary/60 text-primary',
       'hover:bg-primary hover:text-white hover:border-primary',
-      'hover:shadow-lg hover:shadow-primary/20',
+      'hover:shadow-lg hover:shadow-primary/30',
     ].join(' '),
 
     ghost: [
-      'bg-transparent',
-      'text-gray-400 hover:text-white',
+      'bg-transparent text-gray-400 hover:text-white',
       'hover:bg-white/6',
     ].join(' '),
 
     danger: [
-      'bg-red-500/10 hover:bg-red-500/20',
-      'text-red-400',
+      'bg-red-500/10 hover:bg-red-500/20 text-red-400',
       'border border-red-500/20 hover:border-red-500/40',
     ].join(' '),
 
     glass: [
-      'glass-light',
-      'text-white',
+      'glass-light text-white',
       'border border-white/10 hover:border-primary/30',
-      'hover:bg-primary/10',
+      'hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/10',
     ].join(' '),
   };
 
   return (
-    <button
+    <motion.button
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
+      whileHover={!disabled && !loading ? { scale: 1.035 } : {}}
+      whileTap={!disabled && !loading ? { scale: 0.96 } : {}}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
       className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
     >
       {loading ? (
@@ -80,7 +85,7 @@ const Button = ({
         <span className="shrink-0">{icon}</span>
       ) : null}
       {children}
-    </button>
+    </motion.button>
   );
 };
 

@@ -3,38 +3,32 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Heart, Info, AlertCircle, Loader2, Mic,
-  Pin, ChevronRight, MessageCircle, Sparkles, Clock, WifiOff,
+  Pin, ChevronRight, MessageCircle, Sparkles, Clock, WifiOff, User, Bot,
 } from 'lucide-react';
 import ChatBubble from '../components/ChatBubble';
+import VoiceRecorder from '../components/VoiceRecorder';
+import VoiceBubble from '../components/VoiceBubble';
 import Button from '../components/Button';
 import { chatAPI, profileAPI, memoryAPI } from '../services/api';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ErrorCard — distinct visuals for quota vs temporary errors
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────────────────
+const DEBOUNCE_MS = 2000;
+
+// ─── ErrorCard ─────────────────────────────────────────────────────────────
 const ErrorCard = ({ errorType, message, onRetry, canRetry }) => {
   const isQuota = errorType === 'QUOTA_EXCEEDED';
-
   const config = isQuota
     ? {
-        border: 'border-orange-500/30',
-        bg: 'bg-orange-500/8',
-        iconBg: 'bg-orange-500/15',
-        iconColor: 'text-orange-400',
-        textColor: 'text-orange-200',
-        icon: <Clock size={20} />,
+        border: 'border-orange-500/30', bg: 'bg-orange-500/8', iconBg: 'bg-orange-500/15',
+        iconColor: 'text-orange-400', textColor: 'text-orange-200', icon: <Clock size={20} />,
         title: 'Daily Limit Reached',
-        hint: 'Free AI quota resets at midnight (IST). Come back tomorrow!',
+        hint: 'Free AI quota resets at midnight. Come back tomorrow!',
       }
     : {
-        border: 'border-red-500/25',
-        bg: 'bg-red-500/6',
-        iconBg: 'bg-red-500/15',
-        iconColor: 'text-red-400',
-        textColor: 'text-red-300',
-        icon: <WifiOff size={20} />,
+        border: 'border-red-500/25', bg: 'bg-red-500/6', iconBg: 'bg-red-500/15',
+        iconColor: 'text-red-400', textColor: 'text-red-300', icon: <WifiOff size={20} />,
         title: 'Connection Issue',
-        hint: 'This is a temporary issue. You can retry sending.',
+        hint: 'This is a temporary issue. You can retry.',
       };
 
   return (
@@ -44,9 +38,7 @@ const ErrorCard = ({ errorType, message, onRetry, canRetry }) => {
       exit={{ opacity: 0, scale: 0.95 }}
       className="flex justify-center my-2"
     >
-      <div
-        className={`${config.bg} ${config.border} border rounded-2xl px-5 py-4 flex flex-col items-center gap-2.5 text-sm max-w-sm w-full text-center shadow-lg`}
-      >
+      <div className={`${config.bg} ${config.border} border rounded-2xl px-5 py-4 flex flex-col items-center gap-2.5 text-sm max-w-sm w-full text-center shadow-lg`}>
         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${config.iconBg} ${config.iconColor}`}>
           {config.icon}
         </div>
@@ -56,12 +48,8 @@ const ErrorCard = ({ errorType, message, onRetry, canRetry }) => {
           <p className={`text-xs ${config.textColor} opacity-50 mt-1`}>{config.hint}</p>
         </div>
         {canRetry && !isQuota && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRetry}
-            className="mt-1 text-xs py-1.5 px-4 h-auto border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300"
-          >
+          <Button variant="outline" size="sm" onClick={onRetry}
+            className="mt-1 text-xs py-1.5 px-4 h-auto border-red-500/30 hover:bg-red-500/10 text-red-400">
             Retry Sending
           </Button>
         )}
@@ -70,46 +58,31 @@ const ErrorCard = ({ errorType, message, onRetry, canRetry }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Chat page
-// ─────────────────────────────────────────────────────────────────────────────
-const DEBOUNCE_MS = 2000; // 2-second debounce
-
+// ─── Chat Page ──────────────────────────────────────────────────────────────
 const Chat = () => {
-  const [messages, setMessages]       = useState([]);
-  const [input, setInput]             = useState('');
-  const [loading, setLoading]         = useState(false);
-  const [profile, setProfile]         = useState(null);
-  const [memories, setMemories]       = useState([]);
-  const [errorInfo, setErrorInfo]     = useState(null); // { errorType, message }
-  const [panelOpen, setPanelOpen]     = useState(false);
-  const [voiceFile, setVoiceFile]     = useState(null);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [messages, setMessages]         = useState([]);
+  const [input, setInput]               = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [profile, setProfile]           = useState(null);
+  const [memories, setMemories]         = useState([]);
+  const [errorInfo, setErrorInfo]       = useState(null);
+  const [panelOpen, setPanelOpen]       = useState(false);
+  const [initialLoad, setInitialLoad]   = useState(true);
+  // Voice state
+  const [voiceMode, setVoiceMode]       = useState(false);  // show recorder
+  const [voiceType, setVoiceType]       = useState('female'); // 'male' | 'female'
+  const [voiceError, setVoiceError]     = useState(null);
 
   const scrollRef   = useRef(null);
-  const fileRef     = useRef(null);
   const textareaRef = useRef(null);
-
-  /**
-   * isInFlight ref — TRUE while a Gemini request is in-progress.
-   * Using a ref (not state) means it is synchronously updated and is
-   * immune to React StrictMode's double-invocation of render functions.
-   * Even if handleSend is called twice in the same tick, the second call
-   * will see isInFlight.current === true and bail out immediately.
-   */
-  const isInFlight = useRef(false);
-
-  /**
-   * lastSentAt ref — timestamp of the last successful send.
-   * Prevents rapid double-clicks bypassing the loading state.
-   */
-  const lastSentAt = useRef(0);
+  const isInFlight  = useRef(false);
+  const lastSentAt  = useRef(0);
 
   const user = JSON.parse(localStorage.getItem('user'));
 
-  // ── Load chat history, profile, memories on mount ─────────────────────
+  // ── Load data on mount ──────────────────────────────────────────────────
   useEffect(() => {
-    let cancelled = false; // guard against StrictMode double-mount cleanup
+    let cancelled = false;
     const load = async () => {
       try {
         const [histRes, profRes, memRes] = await Promise.all([
@@ -135,78 +108,94 @@ const Chat = () => {
     return () => { cancelled = true; };
   }, [user._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-scroll to bottom ──────────────────────────────────────────────
+  // ── Auto-scroll ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, loading]);
 
-  // ── Core send handler ──────────────────────────────────────────────────
+  // ── Text send handler ───────────────────────────────────────────────────
   const handleSend = useCallback(async (e, retryText = null) => {
     if (e) e.preventDefault();
-
-    const text = retryText ?? (input.trim() || (voiceFile ? `🎤 [Voice note: ${voiceFile.name}]` : ''));
+    const text = retryText ?? input.trim();
     if (!text) return;
+    if (isInFlight.current) return;
 
-    // ── Guard 1: in-flight ref lock (synchronous — StrictMode safe) ───────
-    if (isInFlight.current) {
-      console.warn('[Chat] Request already in-flight — ignoring duplicate call.');
-      return;
-    }
-
-    // ── Guard 2: 2-second debounce ─────────────────────────────────────────
     const now = Date.now();
-    if (!retryText && now - lastSentAt.current < DEBOUNCE_MS) {
-      console.warn('[Chat] Debounce active — ignoring rapid send.');
-      return;
-    }
+    if (!retryText && now - lastSentAt.current < DEBOUNCE_MS) return;
 
-    // ── Acquire lock ───────────────────────────────────────────────────────
     isInFlight.current = true;
     lastSentAt.current = now;
 
-    // Optimistically add user message (only on fresh send, not retry)
     if (!retryText) {
       setMessages(prev => [...prev, { role: 'user', content: text, createdAt: new Date() }]);
       setInput('');
-      setVoiceFile(null);
     }
 
     setLoading(true);
     setErrorInfo(null);
 
-    // ── Audit log — verify exactly one request per message ─────────────────
-    console.log("Sending message to backend");
-    console.log('[Chat] Message snippet:', text.slice(0, 80));
-
     try {
       const { data } = await chatAPI.sendMessage(text);
-
       if (data.success) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.message, createdAt: new Date() }]);
       } else {
-        // Backend returned a structured error (rare; usually thrown by axios)
         setErrorInfo({ errorType: data.errorType || 'UNKNOWN_ERROR', message: data.message });
       }
     } catch (err) {
       const errorType = err.response?.data?.errorType || 'UNKNOWN_ERROR';
-      const message   = err.response?.data?.message   || err.message || 'Something went wrong. Please try again.';
-      console.error('[Chat] API error:', errorType, message);
+      const message   = err.response?.data?.message   || err.message || 'Something went wrong.';
       setErrorInfo({ errorType, message });
     } finally {
       setLoading(false);
-      isInFlight.current = false; // ── Release lock ────────────────────────
+      isInFlight.current = false;
     }
-  }, [input, voiceFile]);
+  }, [input]);
 
-  // ── Retry last user message ────────────────────────────────────────────
+  // ── Retry ───────────────────────────────────────────────────────────────
   const handleRetry = useCallback(() => {
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
     if (lastUserMsg) handleSend(null, lastUserMsg.content);
   }, [messages, handleSend]);
 
-  // ── No profile state ───────────────────────────────────────────────────
+  // ── Voice result handler ─────────────────────────────────────────────────
+  // Called by VoiceRecorder when the full pipeline succeeds
+  const handleVoiceResult = useCallback((result) => {
+    // result = { success, transcript, text, audio, voiceType, ttsError }
+    setVoiceMode(false);
+    
+    if (result.ttsError) {
+      setVoiceError(result.ttsError);
+    } else {
+      setVoiceError(null);
+    }
+
+    // Add user voice message bubble
+    setMessages(prev => [
+      ...prev,
+      {
+        role:      'user',
+        content:   `🎤 ${result.transcript}`,
+        createdAt: new Date(),
+        isVoice:   true,
+      },
+    ]);
+
+    // Add AI reply bubble (with audio if available)
+    setMessages(prev => [
+      ...prev,
+      {
+        role:      'assistant',
+        content:   result.text,
+        createdAt: new Date(),
+        isVoice:   true,
+        audio:     result.audio || null, // base64 MP3
+      },
+    ]);
+  }, []);
+
+  // ── No profile ───────────────────────────────────────────────────────────
   if (!initialLoad && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] max-w-md mx-auto text-center gap-6">
@@ -230,13 +219,13 @@ const Chat = () => {
     );
   }
 
-  const canSend = (input.trim() || voiceFile) && !loading;
+  const canSend      = input.trim() && !loading;
   const isQuotaError = errorInfo?.errorType === 'QUOTA_EXCEEDED';
 
   return (
     <div className="flex h-[calc(100vh-6rem)] gap-5 relative">
 
-      {/* ── Main Chat Area ── */}
+      {/* ── Main Chat Area ─────────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 glass-card rounded-3xl border border-white/6 overflow-hidden min-w-0">
 
         {/* Chat Header */}
@@ -255,6 +244,21 @@ const Chat = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Voice gender toggle */}
+            <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/4 border border-white/6 text-xs font-medium">
+              <button
+                onClick={() => setVoiceType('female')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${voiceType === 'female' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                ♀ Female
+              </button>
+              <button
+                onClick={() => setVoiceType('male')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${voiceType === 'male' ? 'bg-indigo text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                ♂ Male
+              </button>
+            </div>
             <button
               onClick={() => setPanelOpen(p => !p)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/6 text-gray-400 hover:text-white transition-all text-xs font-medium"
@@ -274,7 +278,8 @@ const Chat = () => {
           {/* Empty state */}
           {messages.length === 0 && !loading && !initialLoad && (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="flex flex-col items-center justify-center h-full text-center gap-4 py-20"
             >
               <div className="w-16 h-16 rounded-3xl bg-white/4 border border-white/8 flex items-center justify-center">
@@ -282,7 +287,7 @@ const Chat = () => {
               </div>
               <p className="text-lg font-bold text-white">Start your journey</p>
               <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
-                Send a message to begin reminiscing. I'm here to listen, always.
+                Send a message or record a voice note — I'm always here to listen.
               </p>
               <div className="flex flex-wrap gap-2 justify-center mt-2">
                 {['Tell me about them', 'I miss them today', 'Share a memory'].map(s => (
@@ -300,15 +305,35 @@ const Chat = () => {
 
           {/* Message bubbles */}
           <AnimatePresence initial={false}>
-            {messages.map((msg, i) => (
-              <ChatBubble key={i} message={msg.content} role={msg.role} timestamp={msg.createdAt} />
-            ))}
+            {messages.map((msg, i) => {
+              // Voice message with audio — use VoiceBubble
+              if (msg.isVoice && msg.role === 'assistant' && msg.audio) {
+                return (
+                  <VoiceBubble
+                    key={i}
+                    audioBase64={msg.audio}
+                    text={msg.content}
+                    isAI
+                  />
+                );
+              }
+              // Voice user transcript bubble (styled slightly different)
+              return (
+                <ChatBubble
+                  key={i}
+                  message={msg.content}
+                  role={msg.role}
+                  timestamp={msg.createdAt}
+                />
+              );
+            })}
           </AnimatePresence>
 
-          {/* Typing animation */}
+          {/* Typing indicator */}
           {loading && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
               className="flex gap-3 items-end"
             >
               <div className="w-8 h-8 rounded-2xl bg-white/6 border border-white/8 flex items-center justify-center">
@@ -324,7 +349,25 @@ const Chat = () => {
             </motion.div>
           )}
 
-          {/* Error card */}
+          {/* Voice error */}
+          <AnimatePresence>
+            {voiceError && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex justify-center"
+              >
+                <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-red-500/8 border border-red-500/20 text-red-400 text-sm max-w-sm w-full">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span className="flex-1">{voiceError}</span>
+                  <button onClick={() => setVoiceError(null)} className="text-red-500 hover:text-red-300 text-xs">✕</button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Chat error */}
           <AnimatePresence>
             {errorInfo && (
               <ErrorCard
@@ -337,15 +380,6 @@ const Chat = () => {
           </AnimatePresence>
         </div>
 
-        {/* Voice file preview */}
-        {voiceFile && (
-          <div className="px-6 py-2 border-t border-white/6 bg-primary/5 flex items-center gap-3">
-            <Mic size={16} className="text-primary" />
-            <span className="text-sm text-gray-300 flex-1 truncate">{voiceFile.name}</span>
-            <button onClick={() => setVoiceFile(null)} className="text-xs text-red-400 hover:text-red-300">Remove</button>
-          </div>
-        )}
-
         {/* Input Area */}
         <div className="px-6 py-4 border-t border-white/6 glass-dark shrink-0">
 
@@ -356,66 +390,77 @@ const Chat = () => {
             </div>
           )}
 
-          <form
-            onSubmit={handleSend}
-            className="flex items-end gap-3"
-          >
-            {/* Voice upload */}
-            <button
-              type="button"
-              disabled={loading || isQuotaError}
-              onClick={() => fileRef.current?.click()}
-              className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-primary/10 border border-white/8 hover:border-primary/20 flex items-center justify-center text-gray-400 hover:text-primary transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Mic size={18} />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="audio/*"
-              className="hidden"
-              onChange={e => setVoiceFile(e.target.files[0])}
-            />
+          <form onSubmit={handleSend} className="flex items-end gap-3">
 
-            <div className="flex-1 relative group">
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                placeholder={
-                  isQuotaError
-                    ? 'Daily limit reached — try again tomorrow…'
-                    : 'Share a memory or just say hello…'
-                }
-                value={input}
-                disabled={loading || isQuotaError}
-                onChange={e => {
-                  setInput(e.target.value);
-                  e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                }}
-                onKeyDown={e => {
-                  // Enter sends; Shift+Enter inserts newline
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!loading && !isQuotaError) handleSend(e);
-                  }
-                }}
-                className="w-full bg-white/5 border border-white/8 rounded-2xl py-3 px-5 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200 resize-none placeholder:text-gray-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ maxHeight: '120px', overflowY: 'auto' }}
-              />
-            </div>
+            {/* Voice Recorder or mic button */}
+            <AnimatePresence mode="wait">
+              {voiceMode ? (
+                <VoiceRecorder
+                  key="recorder"
+                  onVoiceResult={handleVoiceResult}
+                  onError={(msg) => { setVoiceError(msg); setVoiceMode(false); }}
+                  disabled={loading || isQuotaError}
+                  voiceType={voiceType}
+                />
+              ) : (
+                <motion.button
+                  key="mic-btn"
+                  type="button"
+                  disabled={loading || isQuotaError}
+                  onClick={() => { setVoiceError(null); setVoiceMode(true); }}
+                  whileHover={{ scale: 1.06 }}
+                  whileTap={{ scale: 0.92 }}
+                  className="mic-glow w-11 h-11 rounded-2xl bg-white/5 hover:bg-primary/15 border border-white/8 hover:border-primary/30 flex items-center justify-center text-gray-400 hover:text-primary transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Record voice message"
+                >
+                  <Mic size={18} />
+                </motion.button>
+              )}
+            </AnimatePresence>
 
-            {/* Send button */}
-            <button
-              type="submit"
-              disabled={!canSend || isQuotaError}
-              className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-indigo text-white flex items-center justify-center hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/25 shrink-0"
-            >
-              {loading
-                ? <Loader2 size={18} className="animate-spin" />
-                : <Send size={18} />
-              }
-            </button>
+            {/* Text input — hidden while in voice mode */}
+            {!voiceMode && (
+              <>
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={textareaRef}
+                    rows={1}
+                    placeholder={
+                      isQuotaError
+                        ? 'Daily limit reached — try again tomorrow…'
+                        : 'Share a memory or just say hello…'
+                    }
+                    value={input}
+                    disabled={loading || isQuotaError}
+                    onChange={e => {
+                      setInput(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (!loading && !isQuotaError) handleSend(e);
+                      }
+                    }}
+                    autoComplete="off"
+                    className="w-full bg-white/5 border border-white/8 rounded-2xl py-3 px-5 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200 resize-none placeholder:text-gray-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ maxHeight: '120px', overflowY: 'auto' }}
+                  />
+                </div>
+
+                {/* Send button */}
+                <motion.button
+                  type="submit"
+                  disabled={!canSend || isQuotaError}
+                  whileHover={{ scale: canSend ? 1.06 : 1 }}
+                  whileTap={{ scale: canSend ? 0.92 : 1 }}
+                  className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-indigo text-white flex items-center justify-center hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/25 shrink-0"
+                >
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                </motion.button>
+              </>
+            )}
           </form>
 
           <p className="text-center text-[11px] text-gray-700 mt-3 flex items-center justify-center gap-1.5">

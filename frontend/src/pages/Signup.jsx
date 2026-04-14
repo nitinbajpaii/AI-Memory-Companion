@@ -144,24 +144,26 @@ const Signup = () => {
             </motion.div>
           )}
 
-          <form onSubmit={handleSignup} className="space-y-5">
+          <form onSubmit={handleSignup} className="space-y-5" autoComplete="off">
             <Input
               label="Full Name"
               type="text"
-              placeholder="Jane Smith"
+              placeholder="Your full name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               icon={<User size={16} />}
               required
+              autoComplete="off"
             />
             <Input
               label="Email Address"
               type="email"
-              placeholder="you@example.com"
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               icon={<Mail size={16} />}
               required
+              autoComplete="off"
             />
             <div>
               <Input
@@ -172,6 +174,7 @@ const Signup = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 icon={<Lock size={16} />}
                 required
+                autoComplete="new-password"
                 rightElement={
                   <button
                     type="button"
