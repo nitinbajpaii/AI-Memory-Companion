@@ -96,28 +96,28 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-4">
+        <div className="min-w-0">
           <motion.h1
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-4xl font-black text-white mb-1"
+            className="text-2xl xs:text-3xl md:text-4xl font-black text-white mb-1 truncate"
           >
             {greeting}, {user?.name?.split(' ')[0]} {greetingEmoji}
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
-            className="text-gray-500">
+            className="text-gray-500 text-sm sm:text-base">
             Here's a look at your healing journey today.
           </motion.p>
         </div>
-        <Link to="/memories">
-          <Button icon={<Plus size={16} />} className="shadow-lg shadow-primary/20">
+        <Link to="/memories" className="w-full sm:w-auto">
+          <Button icon={<Plus size={16} />} className="w-full sm:w-auto shadow-lg shadow-primary/20">
             Add Memory
           </Button>
         </Link>
       </div>
 
       {/* ── Stats Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
         {stats.map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
             <StatCard {...s} />

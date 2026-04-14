@@ -154,11 +154,11 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark text-white">
+    <div className="min-h-screen bg-dark text-white overflow-x-hidden">
       <MiniNav />
 
       {/* Hero */}
-      <section className="pt-20 pb-12 px-6 text-center relative overflow-hidden">
+      <section className="pt-16 sm:pt-20 pb-10 sm:pb-12 px-6 text-center relative overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-10 right-1/4 w-64 h-64 bg-indigo/6 rounded-full blur-3xl pointer-events-none" />
 
@@ -168,44 +168,44 @@ const Contact = () => {
           transition={{ duration: 0.5 }}
           className="relative z-10 max-w-2xl mx-auto"
         >
-          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-6">
+          <span className="inline-flex px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-6">
             Get in Touch
           </span>
 
-          <h1 className="text-4xl md:text-6xl font-black mb-5 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black mb-5 leading-tight">
             We're Here to <span className="gradient-text">Listen</span>
           </h1>
 
-          <p className="text-gray-400 text-lg leading-relaxed">
+          <p className="text-gray-400 text-base sm:text-lg leading-relaxed px-4">
             Whether you have a question, feedback, or just need support.
           </p>
         </motion.div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-6 md:px-8 pb-24 space-y-14">
+      <div className="max-w-6xl mx-auto px-5 sm:px-6 md:px-8 pb-20 sm:pb-24 space-y-10 sm:space-y-14">
 
         {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
           {contactInfo.map((c, i) => {
             const Icon = c.icon;
 
             return (
               <div
                 key={i}
-                className={`glass-card rounded-3xl border ${c.border} p-7`}
+                className={`glass-card rounded-2xl sm:rounded-3xl border ${c.border} p-6 sm:p-7 flex flex-row sm:flex-col items-center sm:items-start gap-4 sm:gap-0`}
               >
-                <div className={`w-12 h-12 rounded-2xl ${c.bg} flex items-center justify-center`}>
-                  <Icon size={22} className={c.color} />
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${c.bg} flex items-center justify-center shrink-0`}>
+                  <Icon size={20} className={c.color} />
                 </div>
 
-                <div className="mt-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase">
+                <div className="sm:mt-4 min-w-0">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                     {c.label}
                   </p>
-                  <p className="font-bold text-white text-sm mt-1">
+                  <p className="font-bold text-white text-xs sm:text-sm mt-0.5 sm:mt-1 truncate">
                     {c.value}
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">
                     {c.sub}
                   </p>
                 </div>
@@ -218,17 +218,17 @@ const Contact = () => {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
 
           {/* Form */}
-          <div className="lg:col-span-3 glass-card rounded-3xl border border-white/8 p-8 md:p-10">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-11 h-11 rounded-2xl bg-primary/12 border border-primary/20 flex items-center justify-center">
-                <Send size={20} className="text-primary" />
+          <div className="lg:col-span-3 glass-card rounded-2xl sm:rounded-3xl border border-white/8 p-6 sm:p-10">
+            <div className="flex items-center gap-3 mb-8 sm:mb-10">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-primary/12 border border-primary/20 flex items-center justify-center">
+                <Send size={18} className="text-primary" />
               </div>
 
               <div>
-                <h2 className="text-xl font-black text-white">
+                <h2 className="text-lg sm:text-xl font-black text-white">
                   Send a Message
                 </h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500">
                   We read every message personally.
                 </p>
               </div>
@@ -236,42 +236,44 @@ const Contact = () => {
 
             <AnimatePresence mode="wait">
               {success ? (
-                <div className="flex flex-col items-center gap-5 py-16 text-center">
-                  <CheckCircle2 size={40} className="text-emerald-400" />
-                  <h3 className="text-2xl font-black text-white">
+                <div className="flex flex-col items-center gap-5 py-12 sm:py-16 text-center">
+                  <CheckCircle2 size={36} className="text-emerald-400" />
+                  <h3 className="text-xl sm:text-2xl font-black text-white">
                     Message Sent!
                   </h3>
-                  <p className="text-gray-400">
+                  <p className="text-sm text-gray-400">
                     Thank you for reaching out.
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
 
                   {error && (
-                    <div className="text-red-400 text-sm">
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs sm:text-sm p-3 rounded-xl">
                       {error}
                     </div>
                   )}
 
-                  <Input
-                    label="Your Name"
-                    value={form.name}
-                    onChange={(e) =>
-                      setForm({ ...form, name: e.target.value })
-                    }
-                    required
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <Input
+                      label="Your Name"
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm({ ...form, name: e.target.value })
+                      }
+                      required
+                    />
 
-                  <Input
-                    label="Email Address"
-                    type="email"
-                    value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    required
-                  />
+                    <Input
+                      label="Email Address"
+                      type="email"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
 
                   <Input
                     label="Subject"
@@ -281,22 +283,26 @@ const Contact = () => {
                     }
                   />
 
-                  <textarea
-                    rows={5}
-                    placeholder="Share what's on your mind..."
-                    value={form.message}
-                    onChange={(e) =>
-                      setForm({ ...form, message: e.target.value })
-                    }
-                    className="w-full rounded-2xl bg-white/5 text-white px-4 py-3"
-                    required
-                  />
+                  <div className="space-y-2">
+                    <label className="text-xs sm:text-sm font-bold text-gray-400 ml-1">Your Message</label>
+                    <textarea
+                      rows={5}
+                      placeholder="Share what's on your mind..."
+                      value={form.message}
+                      onChange={(e) =>
+                        setForm({ ...form, message: e.target.value })
+                      }
+                      className="w-full rounded-xl sm:rounded-2xl bg-white/5 border border-white/8 text-white px-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                      required
+                    />
+                  </div>
 
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full"
+                    className="w-full sm:w-auto px-10 shadow-lg shadow-primary/20"
                     loading={loading}
+                    icon={!loading && <Send size={18} />}
                   >
                     {loading ? 'Sending…' : 'Send Message'}
                   </Button>
@@ -307,31 +313,43 @@ const Contact = () => {
 
           {/* FAQ */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="glass-card rounded-3xl border border-white/8 p-7">
-              <div className="flex items-center gap-2.5 mb-6">
+            <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/8 p-6 sm:p-7">
+              <div className="flex items-center gap-2.5 mb-6 sm:mb-8">
                 <Sparkles size={18} className="text-primary" />
-                <h3 className="font-black text-white text-lg">
+                <h3 className="font-black text-white text-base sm:text-lg">
                   Quick Answers
                 </h3>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3 sm:space-y-4">
                 {faqs.map((faq, i) => (
-                  <div key={i}>
+                  <div key={i} className="border-b border-white/5 last:border-0 pb-3 sm:pb-4 last:pb-0">
                     <button
                       onClick={() =>
                         setOpenFaq(openFaq === i ? null : i)
                       }
-                      className="w-full text-left"
+                      className="w-full text-left flex items-center justify-between group"
                     >
-                      {faq.q}
+                      <span className={`text-xs sm:text-sm font-bold transition-colors ${openFaq === i ? 'text-primary' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                        {faq.q}
+                      </span>
+                      <ChevronRight size={14} className={`text-gray-600 transition-transform ${openFaq === i ? 'rotate-90 text-primary' : ''}`} />
                     </button>
 
-                    {openFaq === i && (
-                      <p className="text-sm text-gray-400 mt-2">
-                        {faq.a}
-                      </p>
-                    )}
+                    <AnimatePresence>
+                      {openFaq === i && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <p className="text-[11px] sm:text-xs text-gray-500 mt-2.5 sm:mt-3 leading-relaxed">
+                            {faq.a}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 ))}
               </div>

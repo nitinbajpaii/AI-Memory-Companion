@@ -60,11 +60,11 @@ const Signup = () => {
   return (
     <div className="min-h-screen bg-dark flex overflow-hidden">
       {/* ── LEFT PANEL ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-dark-lighter via-dark to-dark-lighter">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-dark-lighter via-dark to-dark-lighter shrink-0">
         <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-primary/20 blur-[100px] rounded-full" />
         <div className="absolute bottom-1/4 left-1/4 w-60 h-60 bg-indigo/15 blur-[80px] rounded-full" />
 
-        <div className="relative z-10 flex flex-col justify-between p-14 w-full">
+        <div className="relative z-10 flex flex-col justify-between p-10 xl:p-14 w-full">
           <Link to="/" className="flex items-center gap-2.5 w-fit">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
               <Heart size={18} className="text-white fill-white" />
@@ -74,7 +74,7 @@ const Signup = () => {
 
           <div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <h2 className="text-4xl font-black text-white leading-tight mb-4">
+              <h2 className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4">
                 Honor those who<br />live in your <span className="gradient-text">heart</span>.
               </h2>
               <p className="text-gray-500 text-sm mb-10 leading-relaxed max-w-sm">
@@ -113,14 +113,14 @@ const Signup = () => {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 flex items-center justify-center p-8 relative">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative overflow-y-auto">
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo/8 blur-[120px] rounded-full pointer-events-none" />
 
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md relative z-10"
+          className="w-full max-w-md relative z-10 py-8"
         >
           <Link to="/" className="lg:hidden flex items-center gap-2.5 mb-8 w-fit">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center">
@@ -129,9 +129,9 @@ const Signup = () => {
             <span className="font-bold gradient-text">AI Memory Companion</span>
           </Link>
 
-          <div className="mb-10">
-            <h1 className="text-3xl font-black text-white mb-2">Create your account</h1>
-            <p className="text-gray-500">Begin your healing journey. Free forever.</p>
+          <div className="mb-8">
+            <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">Create your account</h1>
+            <p className="text-gray-500 text-sm sm:text-base">Begin your healing journey. Free forever.</p>
           </div>
 
           {error && (
@@ -144,7 +144,7 @@ const Signup = () => {
             </motion.div>
           )}
 
-          <form onSubmit={handleSignup} className="space-y-5" autoComplete="off">
+          <form onSubmit={handleSignup} className="space-y-4 sm:space-y-5" autoComplete="off">
             <Input
               label="Full Name"
               type="text"
@@ -197,7 +197,9 @@ const Signup = () => {
                     ))}
                   </div>
                   {strengthInfo.label && (
-                    <p className="text-xs text-gray-500">Password strength: <span className="font-semibold text-gray-300">{strengthInfo.label}</span></p>
+                    <p className="text-[10px] text-gray-500">
+                      Strength: <span className={`font-bold ${strengthInfo.color.replace('bg-', 'text-')}`}>{strengthInfo.label}</span>
+                    </p>
                   )}
                 </div>
               )}
@@ -207,10 +209,10 @@ const Signup = () => {
               type="submit"
               size="lg"
               loading={loading}
-              className="w-full shadow-lg shadow-primary/20"
+              className="w-full shadow-lg shadow-primary/20 mt-4"
             >
               {!loading && (
-                <>Get Started Free <ArrowRight size={18} /></>
+                <>Sign Up <ArrowRight size={18} /></>
               )}
             </Button>
           </form>
@@ -222,8 +224,8 @@ const Signup = () => {
             </Link>
           </p>
 
-          <p className="text-center mt-4 text-xs text-gray-700">
-            By creating an account, you agree to our{' '}
+          <p className="text-center mt-6 text-[11px] text-gray-700 max-w-xs mx-auto">
+            By signing up, you agree to our{' '}
             <a href="#" className="underline hover:text-gray-500">Terms</a> and{' '}
             <a href="#" className="underline hover:text-gray-500">Privacy Policy</a>.
           </p>

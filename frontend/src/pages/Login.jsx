@@ -32,12 +32,12 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-dark flex overflow-hidden">
       {/* ── LEFT PANEL ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-dark-lighter via-dark to-dark-lighter">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-dark-lighter via-dark to-dark-lighter shrink-0">
         {/* Glow blobs */}
         <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-primary/20 blur-[100px] rounded-full" />
         <div className="absolute bottom-1/4 right-1/4 w-60 h-60 bg-indigo/15 blur-[80px] rounded-full" />
 
-        <div className="relative z-10 flex flex-col justify-between p-14 w-full">
+        <div className="relative z-10 flex flex-col justify-between p-10 xl:p-14 w-full">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 w-fit">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
@@ -53,7 +53,7 @@ const Login = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
-              <p className="text-4xl font-black text-white leading-tight mb-6">
+              <p className="text-3xl xl:text-4xl font-black text-white leading-tight mb-6">
                 "Grief is the price<br />
                 we pay for <span className="gradient-text">love</span>."
               </p>
@@ -81,8 +81,8 @@ const Login = () => {
 
           {/* Testimonial */}
           <div className="glass-card rounded-2xl border border-white/8 p-5">
-            <div className="flex gap-1 mb-3">
-              {[...Array(5)].map((_, i) => <Star key={i} size={12} className="text-amber-400 fill-amber-400" />)}
+            <div className="flex gap-1 mb-3 text-amber-400">
+              {[...Array(5)].map((_, i) => <Star key={i} size={12} className="fill-current" />)}
             </div>
             <p className="text-gray-400 text-sm italic leading-relaxed mb-3">
               "AI Memory Companion helped me process grief in ways I never thought possible. It's like having a compassionate friend available 24/7."
@@ -99,7 +99,7 @@ const Login = () => {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 flex items-center justify-center p-8 relative">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative overflow-y-auto">
         {/* Background glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
 
@@ -107,7 +107,7 @@ const Login = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md relative z-10"
+          className="w-full max-w-md relative z-10 py-8"
         >
           {/* Mobile Logo */}
           <Link to="/" className="lg:hidden flex items-center gap-2.5 mb-8 w-fit">
@@ -118,8 +118,8 @@ const Login = () => {
           </Link>
 
           <div className="mb-10">
-            <h1 className="text-3xl font-black text-white mb-2">Welcome back</h1>
-            <p className="text-gray-500">Continue your journey of healing and remembrance.</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">Welcome back</h1>
+            <p className="text-gray-500 text-sm sm:text-base">Continue your journey of healing and remembrance.</p>
           </div>
 
           {error && (
@@ -165,7 +165,7 @@ const Login = () => {
             />
 
             <div className="flex justify-end">
-              <a href="#" className="text-sm text-primary hover:text-primary-light transition-colors">Forgot password?</a>
+              <a href="#" className="text-xs sm:text-sm text-primary hover:text-primary-light transition-colors">Forgot password?</a>
             </div>
 
             <Button
@@ -187,7 +187,7 @@ const Login = () => {
             </Link>
           </p>
 
-          <p className="text-center mt-4 text-xs text-gray-700">
+          <p className="text-center mt-6 text-[11px] text-gray-700 max-w-xs mx-auto">
             By signing in, you agree to our{' '}
             <a href="#" className="underline hover:text-gray-500">Terms</a> and{' '}
             <a href="#" className="underline hover:text-gray-500">Privacy Policy</a>.

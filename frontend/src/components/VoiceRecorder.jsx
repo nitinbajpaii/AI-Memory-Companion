@@ -116,13 +116,12 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
     // Reset recorder if active
     stopRecording();
     
-    // Validate format
-    const validFormats = [
-      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/x-wav', 
-      'audio/x-m4a', 'audio/m4a', 'audio/mp4', 'audio/webm', 'audio/ogg', 'audio/aac'
-    ];
-    if (!validFormats.includes(file.type) && !file.name.match(/\.(mp3|wav|m4a|webm|ogg|aac)$/i)) {
-      onError?.('Invalid audio format. Please upload MP3, WAV, M4A, WebM, or OGG.');
+    // Validate format - expanded for mobile
+    const validExtensions = /\.(mp3|wav|m4a|webm|ogg|aac|mp4|3gp|3gpp)$/i;
+    const validMimePrefix = /^(audio\/|video\/webm|video\/mp4)/;
+
+    if (!validMimePrefix.test(file.type) && !file.name.match(validExtensions)) {
+      onError?.('Unsupported audio format. Please upload MP3, WAV, M4A, or WebM.');
       return;
     }
 
@@ -131,6 +130,9 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
     setAudioUrl(url);
     setState('previewing');
     setDuration(0); // Will update once audio loads metadata
+    
+    // Clear input so same file can be selected again if needed
+    e.target.value = '';
   };
 
   // ── Send voice note ──────────────────────────────────────────────────────
@@ -177,16 +179,23 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
     return (
       <div className="flex items-center gap-2">
         {/* Upload Audio */}
-        <label className={`w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/8 hover:border-white/20 flex items-center justify-center text-gray-400 hover:text-white transition-all shrink-0 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`} title="Upload audio file">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => document.getElementById('voice-upload-input')?.click()}
+          className={`w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/8 hover:border-white/20 flex items-center justify-center text-gray-400 hover:text-white transition-all shrink-0 cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`}
+          title="Upload audio file"
+        >
           <Upload size={16} />
           <input
+            id="voice-upload-input"
             type="file"
-            accept="audio/mp3, audio/wav, audio/m4a, audio/webm, audio/ogg"
+            accept="audio/*,video/webm,video/mp4"
             className="hidden"
             onChange={handleFileUpload}
             disabled={disabled}
           />
-        </label>
+        </button>
         
         {/* Record Audio */}
         <motion.button

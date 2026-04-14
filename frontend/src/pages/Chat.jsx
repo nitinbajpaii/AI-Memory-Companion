@@ -223,57 +223,54 @@ const Chat = () => {
   const isQuotaError = errorInfo?.errorType === 'QUOTA_EXCEEDED';
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] gap-5 relative">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] sm:h-[calc(100vh-6rem)] gap-4 sm:gap-5 relative">
 
       {/* ── Main Chat Area ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 glass-card rounded-3xl border border-white/6 overflow-hidden min-w-0">
+      <div className="flex flex-col flex-1 glass-card rounded-2xl sm:rounded-3xl border border-white/6 overflow-hidden min-w-0 h-full">
 
         {/* Chat Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/6 glass-dark shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary/25">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/6 glass-dark shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center text-white font-black text-base sm:text-lg shadow-lg shadow-primary/25">
               {profile?.name?.[0] || '?'}
             </div>
-            <div>
-              <p className="font-bold text-white text-sm">{profile?.name || 'Loved One'}</p>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[11px] text-gray-500 font-medium uppercase tracking-wider">AI Companion</span>
+            <div className="min-w-0">
+              <p className="font-bold text-white text-xs sm:text-sm truncate">{profile?.name || 'Loved One'}</p>
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] sm:text-[11px] text-gray-500 font-medium uppercase tracking-wider">AI Companion</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Voice gender toggle */}
-            <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/4 border border-white/6 text-xs font-medium">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Voice gender toggle - simplified for mobile */}
+            <div className="flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white/4 border border-white/6 text-[10px] sm:text-xs font-medium">
               <button
                 onClick={() => setVoiceType('female')}
-                className={`px-2.5 py-1 rounded-lg transition-all ${voiceType === 'female' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg transition-all ${voiceType === 'female' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                ♀ Female
+                ♀<span className="hidden xs:inline ml-0.5">Female</span>
               </button>
               <button
                 onClick={() => setVoiceType('male')}
-                className={`px-2.5 py-1 rounded-lg transition-all ${voiceType === 'male' ? 'bg-indigo text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg transition-all ${voiceType === 'male' ? 'bg-indigo text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                ♂ Male
+                ♂<span className="hidden xs:inline ml-0.5">Male</span>
               </button>
             </div>
             <button
               onClick={() => setPanelOpen(p => !p)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/6 text-gray-400 hover:text-white transition-all text-xs font-medium"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 border border-white/6 text-gray-400 hover:text-white transition-all text-[10px] sm:text-xs font-medium"
             >
-              <Pin size={13} />
+              <Pin size={12} className="sm:w-[13px] sm:h-[13px]" />
               <span className="hidden sm:inline">Memories</span>
-            </button>
-            <button className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all">
-              <Info size={16} />
             </button>
           </div>
         </div>
 
         {/* Messages Area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-4 scroll-smooth">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 scroll-smooth">
 
           {/* Empty state */}
           {messages.length === 0 && !loading && !initialLoad && (
@@ -381,36 +378,26 @@ const Chat = () => {
         </div>
 
         {/* Input Area */}
-        <div className="px-6 py-4 border-t border-white/6 glass-dark shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-white/6 glass-dark shrink-0">
 
           {/* Quota banner */}
           {isQuotaError && (
-            <div className="mb-3 px-4 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300 text-center">
+            <div className="mb-2 sm:mb-3 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-orange-500/10 border border-orange-500/20 text-[10px] sm:text-xs text-orange-300 text-center">
               ⚡ Daily AI limit reached — sending is disabled until quota resets.
             </div>
           )}
 
-          <form onSubmit={handleSend} className="flex items-end gap-3">
+          <form onSubmit={handleSend} className="flex items-end gap-2 sm:gap-3">
 
             {/* Voice Recorder or mic button */}
             <AnimatePresence mode="wait">
-              {voiceMode ? (
-                <VoiceRecorder
-                  key="recorder"
-                  onVoiceResult={handleVoiceResult}
-                  onError={(msg) => { setVoiceError(msg); setVoiceMode(false); }}
-                  disabled={loading || isQuotaError}
-                  voiceType={voiceType}
-                />
-              ) : (
-                <VoiceRecorder
-                  key="idle-recorder"
-                  onVoiceResult={handleVoiceResult}
-                  onError={(msg) => setVoiceError(msg)}
-                  disabled={loading || isQuotaError}
-                  voiceType={voiceType}
-                />
-              )}
+              <VoiceRecorder
+                key={voiceMode ? "recorder" : "idle-recorder"}
+                onVoiceResult={handleVoiceResult}
+                onError={(msg) => { setVoiceError(msg); if(voiceMode) setVoiceMode(false); }}
+                disabled={loading || isQuotaError}
+                voiceType={voiceType}
+              />
             </AnimatePresence>
 
             {/* Text input — hidden while in voice mode */}
@@ -422,8 +409,8 @@ const Chat = () => {
                     rows={1}
                     placeholder={
                       isQuotaError
-                        ? 'Daily limit reached — try again tomorrow…'
-                        : 'Share a memory or just say hello…'
+                        ? 'Limit reached…'
+                        : 'Say hello…'
                     }
                     value={input}
                     disabled={loading || isQuotaError}
@@ -439,7 +426,7 @@ const Chat = () => {
                       }
                     }}
                     autoComplete="off"
-                    className="w-full bg-white/5 border border-white/8 rounded-2xl py-3 px-5 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200 resize-none placeholder:text-gray-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-white/5 border border-white/8 rounded-xl sm:rounded-2xl py-2.5 sm:py-3 px-4 sm:px-5 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200 resize-none placeholder:text-gray-600 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ maxHeight: '120px', overflowY: 'auto' }}
                   />
                 </div>
@@ -450,15 +437,15 @@ const Chat = () => {
                   disabled={!canSend || isQuotaError}
                   whileHover={{ scale: canSend ? 1.06 : 1 }}
                   whileTap={{ scale: canSend ? 0.92 : 1 }}
-                  className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-indigo text-white flex items-center justify-center hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/25 shrink-0"
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-indigo text-white flex items-center justify-center hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/25 shrink-0"
                 >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 </motion.button>
               </>
             )}
           </form>
 
-          <p className="text-center text-[11px] text-gray-700 mt-3 flex items-center justify-center gap-1.5">
+          <p className="hidden sm:flex text-center text-[11px] text-gray-700 mt-3 items-center justify-center gap-1.5">
             <Heart size={10} className="text-primary" />
             Always here to listen · Press Enter to send, Shift+Enter for new line
           </p>
@@ -470,35 +457,38 @@ const Chat = () => {
         {panelOpen && (
           <motion.div
             initial={{ opacity: 0, width: 0, x: 20 }}
-            animate={{ opacity: 1, width: 280, x: 0 }}
+            animate={{ opacity: 1, width: window.innerWidth < 1024 ? '100%' : 280, x: 0 }}
             exit={{ opacity: 0, width: 0, x: 20 }}
             transition={{ type: 'spring', stiffness: 250, damping: 25 }}
-            className="hidden lg:flex flex-col glass-card rounded-3xl border border-white/6 overflow-hidden shrink-0"
-            style={{ width: 280 }}
+            className="flex flex-col glass-card rounded-2xl sm:rounded-3xl border border-white/6 overflow-hidden shrink-0 absolute lg:relative z-40 right-0 top-0 bottom-0 h-full bg-dark/95 backdrop-blur-xl"
+            style={{ width: window.innerWidth < 1024 ? '100%' : 280 }}
           >
             <div className="px-5 py-4 border-b border-white/6 flex items-center justify-between">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Pin size={14} className="text-primary" /> Pinned Memories
               </h3>
               <button onClick={() => setPanelOpen(false)} className="text-gray-500 hover:text-white">
-                <ChevronRight size={16} />
+                <ChevronRight size={18} />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {memories.length === 0 ? (
                 <div className="text-center py-10">
-                  <Sparkles size={24} className="text-gray-700 mx-auto mb-2" />
+                  <Sparkles size="24" className="text-gray-700 mx-auto mb-2" />
                   <p className="text-xs text-gray-600">No memories yet. Add some!</p>
                 </div>
               ) : (
                 memories.slice(0, 10).map((m, i) => (
                   <button
                     key={m._id || i}
-                    onClick={() => setInput(`Regarding "${m.memoryText.slice(0, 50)}..."`)}
+                    onClick={() => { setInput(`Regarding "${m.memoryText.slice(0, 50)}..."`); if(window.innerWidth < 1024) setPanelOpen(false); }}
                     className="w-full text-left p-3 rounded-xl bg-white/3 hover:bg-primary/8 border border-white/4 hover:border-primary/15 transition-all group"
                   >
-                    <p className="text-xs text-gray-400 line-clamp-2 group-hover:text-gray-200 leading-relaxed">{m.memoryText}</p>
-                    <span className="text-[10px] text-primary/60 mt-1 inline-block font-medium uppercase tracking-wide">{m.emotionTag}</span>
+                    <p className="text-xs text-gray-400 group-hover:text-white line-clamp-3 transition-colors">{m.memoryText}</p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-[10px] text-primary/60 font-bold uppercase tracking-tighter">{m.emotionTag}</span>
+                      <ChevronRight size={10} className="text-gray-700 group-hover:text-primary transition-colors" />
+                    </div>
                   </button>
                 ))
               )}

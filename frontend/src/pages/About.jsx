@@ -88,7 +88,7 @@ const About = () => (
   <div className="min-h-screen bg-dark text-white">
     <MiniNav />
 
-    <div className="max-w-5xl mx-auto px-6 md:px-8 py-20 space-y-20">
+    <div className="max-w-5xl mx-auto px-5 sm:px-6 md:px-8 py-12 sm:py-20 space-y-16 sm:space-y-20">
 
       {/* ── Hero ── */}
       <motion.div
@@ -98,43 +98,38 @@ const About = () => (
         transition={{ duration: 0.5 }}
         className="text-center relative"
       >
-        {/* Glow blobs */}
-        <div className="absolute top-0 left-1/3 w-80 h-80 bg-primary/8 rounded-full blur-3xl -z-10" />
-        <div className="absolute top-10 right-1/3 w-60 h-60 bg-indigo/6 rounded-full blur-3xl -z-10" />
-
-        <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-6">
-          Our Mission
-        </span>
-        <h1 className="text-5xl md:text-6xl font-black mb-6 leading-tight">
-          Built for the <span className="gradient-text">Human Heart</span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-6 sm:mb-8">
+          <Sparkles size={12} /> Our Mission
+        </div>
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white leading-[1.1] mb-6">
+          Honoring the <span className="gradient-text">Past</span>,<br />
+          Supporting your <span className="gradient-text-warm">Future</span>.
         </h1>
-        <p className="text-gray-400 text-xl leading-relaxed max-w-2xl mx-auto">
-          AI Memory Companion was founded on a simple belief: grief doesn't need to be faced alone.
-          We blend emotional intelligence with ethical AI to create a space where love, memory, and healing coexist.
+        <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed px-2">
+          AI Memory Companion was born from a simple belief: that technology should be a 
+          bridge to healing, not a replacement for human connection.
         </p>
       </motion.div>
 
-      {/* ── Stats Row ── */}
+      {/* ── Stats ── */}
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: '-80px' }}
+        viewport={{ once: true }}
         variants={stagger}
-        className="grid grid-cols-2 md:grid-cols-4 gap-5"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
       >
-        {stats.map(({ icon: Icon, value, label, color }, i) => (
+        {stats.map((s, i) => (
           <motion.div
             key={i}
             variants={fadeUp}
-            whileHover={{ y: -5, scale: 1.03 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-            className="glass-card rounded-3xl border border-white/6 hover:border-primary/20 p-7 text-center flex flex-col items-center gap-3 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5"
+            className="glass-card rounded-2xl sm:rounded-3xl border border-white/6 p-5 sm:p-8 text-center"
           >
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Icon size={22} className={color} />
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4 ${s.color}`}>
+              <s.icon size={20} className="sm:w-6 sm:h-6" />
             </div>
-            <p className="text-3xl font-black text-white">{value}</p>
-            <p className="text-xs text-gray-500 font-medium text-center leading-tight">{label}</p>
+            <p className="text-2xl sm:text-3xl font-black text-white mb-1">{s.value}</p>
+            <p className="text-[10px] sm:text-xs text-gray-600 font-bold uppercase tracking-widest">{s.label}</p>
           </motion.div>
         ))}
       </motion.div>

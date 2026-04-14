@@ -21,27 +21,48 @@ async function transcribeAudio(audioBuffer, mimeType) {
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
   // ── Clean & Normalize mimeType ───────────────────────────────────────────
-  // Gemini expects: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac, audio/webm
+  // Gemini 1.5 Flash supports: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac, audio/webm
   let baseMimeType = (mimeType || 'audio/webm').split(';')[0].toLowerCase();
   
-  // Mapping for common browser/upload variations
+  // Comprehensive mapping for browser & mobile upload variations
   const mimeMap = {
-    'audio/x-m4a':  'audio/mp4',
-    'audio/m4a':    'audio/mp4',
-    'audio/mpeg':   'audio/mp3',
-    'audio/mp3':    'audio/mp3',
-    'audio/wav':    'audio/wav',
-    'audio/wave':   'audio/wav',
-    'audio/x-wav':  'audio/wav',
-    'audio/ogg':    'audio/ogg',
-    'audio/webm':   'audio/webm',
+    'audio/x-m4a':    'audio/mp4',
+    'audio/m4a':      'audio/mp4',
+    'audio/x-mp4':    'audio/mp4',
+    'audio/mpeg':     'audio/mp3',
+    'audio/mp3':      'audio/mp3',
+    'audio/x-mp3':    'audio/mp3',
+    'audio/wav':      'audio/wav',
+    'audio/wave':     'audio/wav',
+    'audio/x-wav':    'audio/wav',
+    'audio/ogg':      'audio/ogg',
+    'audio/x-ogg':    'audio/ogg',
+    'audio/webm':     'audio/webm',
+    'audio/x-webm':   'audio/webm',
+    'audio/aac':      'audio/aac',
+    'audio/x-aac':    'audio/aac',
+    'audio/3gp':      'audio/3gpp',
+    'audio/3gpp':     'audio/3gpp',
+    'audio/x-3gpp':   'audio/3gpp',
+    'video/webm':     'audio/webm', // Common on some mobile browsers
+    'video/mp4':      'audio/mp4',  // Common on iOS Safari
+    'application/octet-stream': 'audio/webm', // Fallback for missing type
   };
 
   if (mimeMap[baseMimeType]) {
     baseMimeType = mimeMap[baseMimeType];
   }
 
-  console.log(`[STT] Sending to Gemini: ${audioBuffer.length} bytes | mime: ${baseMimeType}`);
+  // Ensure it starts with audio/ (unless we mapped it specifically)
+  if (!baseMimeType.startsWith('audio/') && !baseMimeType.startsWith('video/')) {
+    baseMimeType = 'audio/webm';
+  }
+
+  console.log(`[STT] Processing: ${audioBuffer.length} bytes | Detected: ${mimeType} | Normalized: ${baseMimeType}`);
+
+  if (!audioBuffer || audioBuffer.length === 0) {
+    throw new Error('EMPTY_AUDIO_BUFFER');
+  }
 
   const audioPart = {
     inlineData: {
@@ -223,13 +244,14 @@ const handleVoiceChat = async (req, res) => {
 
       // Map internal errors to user-friendly messages
       const errorMap = {
-        'NO_SPEECH_DETECTED':           'No speech detected. Please speak clearly or try a different file.',
-        'SAFETY_BLOCKED':               'Voice note blocked by safety filters. Please try again.',
-        'QUOTA_EXCEEDED':               'Daily transcription limit reached.',
-        'TRANSCRIPTION_SERVICE_ERROR':  'AI service error during transcription. Please try again.',
+        'EMPTY_AUDIO_BUFFER':           'The audio file appears to be empty. Please record again.',
+        'NO_SPEECH_DETECTED':           'No speech was detected in your recording. Please speak clearly.',
+        'SAFETY_BLOCKED':               'Voice content was blocked by safety filters. Please try again.',
+        'QUOTA_EXCEEDED':               'Daily transcription limit reached. Please try again tomorrow.',
+        'TRANSCRIPTION_SERVICE_ERROR':  'AI transcription service is temporarily unavailable. Please try again.',
       };
 
-      const message = errorMap[err.message] || 'Could not process audio. Please try again.';
+      const message = errorMap[err.message] || `Could not process audio: ${err.message || 'Unknown error'}`;
       
       return res.status(422).json({
         success:   false,
