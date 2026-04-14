@@ -1,119 +1,255 @@
-# AI Memory Companion 🕊️
+# AI Memory Companion 🕊️✨
 
-AI Memory Companion is an emotionally intelligent SaaS application designed for grief support and memory healing. It uses OpenAI's GPT models to provide a warm, empathetic space to honor and interact with the legacy of loved ones through memories.
+AI Memory Companion is a premium **AI-powered emotional support and grief healing SaaS application** designed to help users preserve memories, relive cherished moments, and receive warm, empathetic conversations inspired by loved ones.
 
-## ✨ Features
+The platform combines **Google Gemini AI** for emotionally intelligent conversations and **ElevenLabs Voice AI** for realistic voice-based responses with **separate Male and Female companion voices**.
 
-- **Emotionally Intelligent AI**: Adapts its tone based on your mood (Sad, Lonely, Normal).
-- **Memory Management**: Create a dedicated space for special moments and memories.
-- **Personalized Memorials**: Build a detailed profile for your loved one to guide the AI's persona.
-- **Premium SaaS UI**: Modern, glassmorphism-inspired design with smooth animations.
-- **Privacy First**: Secure authentication and private data storage.
-- **Healthy Boundaries**: Encourages real-world connections and provides grief support resources.
+Built as a **resume-worthy full-stack SaaS project**, it delivers an app-like experience with a modern dark UI, smooth animations, and premium voice interaction.
+
+---
+
+## ✨ Key Features
+
+### 🧠 Emotionally Intelligent AI
+
+* Powered by **Google Gemini API**
+* Emotion-aware responses
+* Supports grief healing, companionship, and memory preservation
+* Adapts tone based on user mood:
+
+  * Sad / grieving
+  * Lonely
+  * Normal conversation
+
+---
+
+### 🎙️ AI Voice Companion
+
+Integrated with **ElevenLabs Voice AI**
+
+Supports:
+
+* **Male companion voice**
+* **Female companion voice**
+
+Users can:
+
+* record voice messages
+* upload local audio files
+* receive realistic AI voice replies
+
+Supported audio formats:
+
+* mp3
+* wav
+* m4a
+* webm
+
+---
+
+### 🎧 Voice Interaction Flow
+
+User Audio Input
+↓
+Speech to Text
+↓
+Gemini AI Response
+↓
+ElevenLabs Voice Generation
+↓
+Playable Audio Reply
+
+---
+
+### 💙 Memory Healing Features
+
+* create personal memory spaces
+* preserve special moments
+* emotional support conversations
+* guided grief healing experience
+
+---
+
+### 🔐 Secure Authentication
+
+* JWT-based authentication
+* protected routes
+* persistent sessions
+* secure login/signup
+* user profile dropdown
+
+---
+
+### 🎨 Premium SaaS UI
+
+* dark glassmorphism theme
+* Framer Motion animations
+* responsive dashboard
+* premium landing page
+* smooth page transitions
 
 ---
 
 ## 🚀 Tech Stack
 
 ### Frontend
-- **Framework**: React + Vite
-- **Styling**: Tailwind CSS
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
-- **HTTP Client**: Axios
-- **Routing**: React Router DOM
-- **Deployment**: Vercel-ready
+
+* React + Vite
+* Tailwind CSS
+* Framer Motion
+* React Router DOM
+* Lucide React
+* Axios
 
 ### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB Atlas
-- **ORM**: Mongoose
-- **AI**: OpenAI API
-- **Auth**: JWT & BcryptJS
-- **Deployment**: Render-ready
+
+* Node.js
+* Express.js
+* MongoDB Atlas
+* Mongoose
+* JWT
+* BcryptJS
+
+### AI & Voice
+
+* Google Gemini API
+* ElevenLabs API
+* Male Voice
+* Female Voice
+
+### Deployment
+
+* Frontend → Vercel
+* Backend → Render
+* Database → MongoDB Atlas
 
 ---
 
 ## 🛠️ Local Setup
 
-### 1. Clone the repository
+### Clone Repository
+
 ```bash
 git clone <your-repo-url>
 cd AI-Memory-Companion
 ```
 
-### 2. Backend Setup
+### Backend Setup
+
 ```bash
 cd backend
 npm install
-```
-Create a `.env` file in the `backend/` folder:
-```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-OPENAI_API_KEY=your_openai_key
-JWT_SECRET=your_jwt_secret_key
-```
-Run the backend:
-```bash
 npm run dev
 ```
 
-### 3. Frontend Setup
+### Frontend Setup
+
 ```bash
-cd ../frontend
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## 🔐 Environment Variables
+
+### Backend `.env`
+
+```env
+PORT=5001
+MONGO_URI=your_mongodb_connection_string
+GEMINI_API_KEY=your_gemini_api_key
+JWT_SECRET=your_jwt_secret
+
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+ELEVENLABS_VOICE_ID_MALE=your_male_voice_id
+ELEVENLABS_VOICE_ID_FEMALE=your_female_voice_id
+```
+
+### Frontend `.env`
+
+```env
+VITE_API_URL=http://localhost:5001/api
+```
+
+---
+
+## 🌍 Deployment
+
+### Frontend → Vercel
+
+```bash
+cd frontend
+vercel
+```
+
+### Backend → Render
+
+**Root Directory**
+backend
+
+**Build Command**
+
+```bash
 npm install
 ```
-Create a `.env` file in the `frontend/` folder:
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-Run the frontend:
+
+**Start Command**
+
 ```bash
-npm run dev
+npm start
 ```
 
 ---
 
-## 🗄️ MongoDB Atlas Setup Guide
+## 🗄️ MongoDB Atlas Setup
 
-1.  Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
-2.  Go to **Network Access** and whitelist IP `0.0.0.0/0` (for development).
-3.  Go to **Database Access** and create a user with a password.
-4.  Click **Connect** -> **Connect your application** and copy the connection string.
-5.  Paste it into `backend/.env` as `MONGO_URI`.
-    - Format: `mongodb+srv://username:password@cluster.mongodb.net/aimemory`
-
----
-
-## 🌍 Deployment Guide
-
-### Frontend (Vercel)
-1.  Install Vercel CLI: `npm install -g vercel`
-2.  Inside `frontend/` folder, run: `vercel`
-3.  Add environment variable `VITE_API_URL` (your backend URL) in Vercel dashboard.
-
-### Backend (Render)
-1.  Create a new **Web Service** on Render.
-2.  Connect your GitHub repository.
-3.  **Root Directory**: `backend`
-4.  **Build Command**: `npm install`
-5.  **Start Command**: `npm start`
-6.  Add Environment Variables:
-    - `MONGO_URI`
-    - `OPENAI_API_KEY`
-    - `JWT_SECRET`
-    - `PORT` (usually 5000 or Render will assign)
+1. Create a free cluster
+2. whitelist IP `0.0.0.0/0`
+3. create DB user
+4. copy connection string
+5. add in `MONGO_URI`
 
 ---
 
-## 📜 AI Ethics & Boundaries
-This application is built with the following core principles:
-- **AI Inspired, Not Real**: The AI clearly states it is inspired by memories and is not the actual person.
-- **Hinglish Support**: Natural language mixing for a familiar feel.
-- **Healthy Recovery**: If signs of extreme dependency are detected, the AI gently encourages seeking professional help or connecting with real-life support networks.
+## 🎤 Voice Features
+
+The platform supports **dual AI companion voices**
+
+### 👨 Male Voice
+
+Warm and emotionally supportive masculine AI voice
+
+### 👩 Female Voice
+
+Soft and comforting feminine AI voice
+
+Users can choose preferred voice dynamically.
 
 ---
 
-Built with ❤️ for those who remember.
+## 📜 AI Ethics & Emotional Safety
+
+This application follows strict emotional safety principles:
+
+* AI inspired by memories, not the real person
+* encourages healthy emotional recovery
+* supports grief healing
+* avoids unhealthy emotional dependency
+* promotes real-world human connections
+
+---
+
+## 💡 Resume Highlights
+
+* Full-stack SaaS AI product
+* production-level UI/UX
+* AI voice interaction system
+* emotion-aware conversation flow
+* deployed on Vercel + Render
+* portfolio-ready project
+
+---
+
+Built with ❤️ for healing, memories, and meaningful conversations.
