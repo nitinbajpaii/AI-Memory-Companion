@@ -9,7 +9,6 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Footer from '../components/Footer';
 import ProfileDropdown from '../components/ProfileDropdown';
-import { contactAPI } from '../services/api';
 
 /* ── Data ── */
 const contactInfo = [
@@ -131,8 +130,19 @@ const Contact = () => {
     setError('');
 
     try {
-      const response = await contactAPI.submitForm(form);
-      const result = response.data;
+      const formData = new FormData();
+      formData.append('access_key', '75a575c5-ebd9-478c-bcb0-b5070a81dcb6');
+      formData.append('name', form.name);
+      formData.append('email', form.email);
+      formData.append('subject', form.subject);
+      formData.append('message', form.message);
+
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
 
       if (result.success) {
         setSuccess(true);
@@ -146,7 +156,7 @@ const Contact = () => {
         setError(result.message || 'Failed to send message.');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+      setError('Something went wrong. Please try again.');
     }
 
     setLoading(false);

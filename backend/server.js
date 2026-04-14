@@ -13,7 +13,6 @@ const memoryRoutes  = require('./routes/memoryRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const reviewRoutes  = require('./routes/reviewRoutes');
 const voiceRoutes   = require('./routes/voiceRoutes');
-const contactRoutes = require('./routes/contactRoutes');
 const { checkDbConnection } = require('./middleware/dbStatus');
 
 // Startup Check
@@ -70,7 +69,6 @@ app.use('/api/memory',  memoryRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/voice',   voiceRoutes);
-app.use('/api/contact', contactRoutes);
 
 app.get('/', (req, res) => {
   res.send('AI Memory Companion API is running...');
