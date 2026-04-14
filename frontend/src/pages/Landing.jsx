@@ -51,14 +51,13 @@ const LandingNav = () => {
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-dark/70 backdrop-blur-2xl border-b border-white/6 shadow-xl shadow-black/40' : 'bg-transparent py-2'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-dark border-b border-white/6 shadow-lg shadow-black/20' : 'bg-transparent'}`}>
       <div className="max-w-7xl mx-auto px-6 md:px-8 h-16 flex items-center justify-between">
-        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2.5 group relative">
-          <div className="absolute -inset-2 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/50 transition-all duration-300 relative z-10">
+        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
             <Heart size={16} className="text-white fill-white" />
           </div>
-          <span className="font-bold text-base gradient-text group-hover:brightness-125 transition-all">AI Memory Companion</span>
+          <span className="font-bold text-base gradient-text">AI Memory Companion</span>
         </Link>
 
         {/* Desktop Nav */}
@@ -150,10 +149,9 @@ const Landing = () => {
                 <Sparkles size={12} /> Emotionally Intelligent AI
               </motion.div>
 
-              <h1 className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.08] tracking-tight mb-6 relative">
-                <span className="absolute -inset-x-6 -inset-y-4 bg-primary/20 blur-3xl rounded-full opacity-50 pointer-events-none" />
-                <span className="relative">Preserve <span className="gradient-text">Memories</span>.<br />
-                Heal with <span className="gradient-text-warm">Warmth</span>.</span>
+              <h1 className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.08] tracking-tight mb-6">
+                Preserve <span className="gradient-text">Memories</span>.<br />
+                Heal with <span className="gradient-text-warm">Warmth</span>.
               </h1>
 
               <p className="text-lg text-gray-400 leading-relaxed mb-10 max-w-lg">
@@ -161,14 +159,14 @@ const Landing = () => {
                 manage cherished memories, and find comfort through AI-driven healing conversations.
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 relative">
+              <div className="flex flex-wrap items-center gap-4">
                 <Link to="/signup">
-                  <Button size="lg" className="shadow-2xl shadow-primary/40 group bg-gradient-to-r from-primary to-indigo hover:from-primary-light hover:to-indigo-light text-white px-8">
-                    Create a Memorial <ArrowRight size={18} className="group-hover:translate-x-1.5 transition-transform" />
+                  <Button size="lg" className="shadow-xl shadow-primary/25 group">
+                    Create a Memorial <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <a href="#how-it-works">
-                  <Button variant="secondary" size="lg" className="glass hover:bg-white/10 px-8 transition-colors">
+                  <Button variant="secondary" size="lg">
                     See How It Works
                   </Button>
                 </a>
@@ -200,7 +198,7 @@ const Landing = () => {
                 {/* Main card */}
                 <div className="glass-card rounded-3xl border border-white/8 shadow-2xl shadow-black/50 overflow-hidden glow-primary-sm">
                   {/* Header */}
-                  <div className="flex items-center gap-3 p-5 border-b border-white/6 bg-white/5">
+                  <div className="flex items-center gap-3 p-5 border-b border-white/6">
                     <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
                       <Heart size={18} className="text-white fill-white" />
                     </div>
@@ -208,7 +206,7 @@ const Landing = () => {
                       <p className="text-sm font-semibold text-white">Grandma Rose</p>
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[11px] text-gray-400">AI Companion active</span>
+                        <span className="text-[11px] text-gray-500">AI Companion active</span>
                       </div>
                     </div>
                   </div>

@@ -10,7 +10,7 @@ const Navbar = ({ onMenuClick }) => {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="h-16 bg-dark/70 backdrop-blur-2xl border-b border-white/6 flex items-center justify-between px-5 md:px-8 sticky top-0 z-30 shrink-0 shadow-xl shadow-black/40"
+      className="h-16 glass-dark border-b border-white/6 flex items-center justify-between px-5 md:px-8 sticky top-0 z-30 shrink-0 shadow-lg shadow-black/20"
     >
       {/* ── Left: Brand & Nav ── */}
       <div className="flex items-center gap-6">
@@ -23,12 +23,11 @@ const Navbar = ({ onMenuClick }) => {
           <Menu size={18} />
         </motion.button>
 
-        <Link to="/dashboard" className="flex items-center gap-2.5 group relative">
-          <div className="absolute -inset-2 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/50 transition-all duration-300 relative z-10">
+        <Link to="/dashboard" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
             <Heart size={16} className="text-white fill-white" />
           </div>
-          <span className="hidden sm:block font-black text-sm gradient-text group-hover:brightness-125 transition-all">AI Memory Companion</span>
+          <span className="hidden sm:block font-black text-sm gradient-text">AI Memory Companion</span>
         </Link>
 
         {/* Dashboard Navigation */}

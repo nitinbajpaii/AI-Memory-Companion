@@ -12,18 +12,11 @@ import { voiceAPI } from '../services/api';
 //   voiceType — 'male' | 'female'
 // ─────────────────────────────────────────────────────────────────────────────
 
-const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = 'female', onStateChange }) => {
+const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = 'female' }) => {
   const [state, setState]         = useState('idle');       // idle|recording|previewing|processing
   const [duration, setDuration]   = useState(0);
   const [audioUrl, setAudioUrl]   = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-
-  // Notify parent when state changes
-  useEffect(() => {
-    if (onStateChange) {
-      onStateChange(state);
-    }
-  }, [state, onStateChange]);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef        = useRef([]);
@@ -121,12 +114,7 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
     
     // Validate format
     const validFormats = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-m4a', 'audio/m4a', 'audio/webm', 'audio/ogg'];
-    const validExtensions = ['.mp3', '.wav', '.m4a', '.webm', '.ogg'];
-    
-    const isValidType = validFormats.includes(file.type);
-    const isValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-
-    if (!isValidType && !isValidExt) {
+    if (!validFormats.includes(file.type)) {
       onError?.('Invalid audio format. Please upload MP3, WAV, M4A, or WebM.');
       return;
     }
@@ -145,10 +133,7 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
 
     try {
       const formData = new FormData();
-      // If it's a File object (uploaded), it has a 'name' property
-      const isUploadedFile = blobRef.current instanceof File;
-      const filename = isUploadedFile ? blobRef.current.name : `voice_${Date.now()}.webm`;
-      formData.append('audio', blobRef.current, filename);
+      formData.append('audio', blobRef.current, `voice_${Date.now()}.webm`);
       formData.append('voiceType', voiceType);
 
       const { data } = await voiceAPI.transcribe(formData);

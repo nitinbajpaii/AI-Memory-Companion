@@ -10,12 +10,11 @@ import { memoryAPI, profileAPI } from '../services/api';
 
 const StatCard = ({ label, value, icon: Icon, color, bg, trend }) => (
   <motion.div
-    whileHover={{ y: -6, scale: 1.02 }}
-    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-    className="glass-card rounded-3xl border border-white/6 p-6 hover:border-primary/30 hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all duration-300 relative overflow-hidden group"
+    whileHover={{ y: -4, scale: 1.01 }}
+    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    className="glass-card rounded-3xl border border-white/6 p-6 hover:border-primary/20 transition-all duration-300"
   >
-    <div className="absolute -right-10 -top-10 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
-    <div className="flex items-start justify-between mb-4 relative z-10">
+    <div className="flex items-start justify-between mb-4">
       <div className={`w-12 h-12 ${bg} rounded-2xl flex items-center justify-center`}>
         <Icon size={22} className={color} />
       </div>

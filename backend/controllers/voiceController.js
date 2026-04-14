@@ -12,7 +12,7 @@ const Chat                 = require('../models/Chat');
 /**
  * Transcribe audio buffer → text using Gemini 1.5 Flash multimodal.
  */
-async function transcribeAudio(audioBuffer, mimeType, filename) {
+async function transcribeAudio(audioBuffer, mimeType) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not set');
 
@@ -20,24 +20,10 @@ async function transcribeAudio(audioBuffer, mimeType, filename) {
   // gemini-1.5-flash supports audio inlineData
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-  // Clean up mimeType for Gemini
-  let cleanMimeType = mimeType || 'audio/webm';
-  if (cleanMimeType.includes(';')) {
-    cleanMimeType = cleanMimeType.split(';')[0]; // e.g., 'audio/webm'
-  }
-  
-  if (cleanMimeType === 'application/octet-stream' || cleanMimeType === 'video/webm') {
-    if (filename.endsWith('.mp3')) cleanMimeType = 'audio/mp3';
-    else if (filename.endsWith('.wav')) cleanMimeType = 'audio/wav';
-    else if (filename.endsWith('.m4a')) cleanMimeType = 'audio/mp4'; // Gemini supports audio/mp4 for m4a
-    else if (filename.endsWith('.ogg')) cleanMimeType = 'audio/ogg';
-    else cleanMimeType = 'audio/webm';
-  }
-
   const audioPart = {
     inlineData: {
       data: audioBuffer.toString('base64'),
-      mimeType: cleanMimeType,
+      mimeType: mimeType || 'audio/webm',
     },
   };
 
@@ -189,7 +175,7 @@ const handleVoiceChat = async (req, res) => {
     // ── 1. Speech → Text (Gemini multimodal) ──────────────────────────────────
     let transcript;
     try {
-      transcript = await transcribeAudio(req.file.buffer, req.file.mimetype, req.file.originalname);
+      transcript = await transcribeAudio(req.file.buffer, req.file.mimetype);
       console.log('[Voice] Transcript:', transcript.slice(0, 120));
     } catch (err) {
       console.error('[Voice] Transcription failed:', err.message);

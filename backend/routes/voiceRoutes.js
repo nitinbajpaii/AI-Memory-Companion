@@ -9,12 +9,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits:  { fileSize: 10 * 1024 * 1024 }, // 10 MB max
   fileFilter: (_req, file, cb) => {
-    // Allow audio types, video/webm (sometimes used for webm audio), and application/octet-stream for unrecognised extensions
-    if (
-      file.mimetype.startsWith('audio/') || 
-      file.mimetype === 'video/webm' ||
-      file.originalname.match(/\.(mp3|wav|m4a|webm|ogg)$/i)
-    ) {
+    if (file.mimetype.startsWith('audio/')) {
       cb(null, true);
     } else {
       cb(new Error('Only audio files are allowed'), false);

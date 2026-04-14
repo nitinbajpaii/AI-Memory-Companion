@@ -223,13 +223,13 @@ const Chat = () => {
   const isQuotaError = errorInfo?.errorType === 'QUOTA_EXCEEDED';
 
   return (
-    <div className="flex-1 flex min-h-0 gap-5 relative h-full">
+    <div className="flex h-[calc(100vh-6rem)] gap-5 relative">
 
       {/* ── Main Chat Area ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 h-full glass-card rounded-3xl border border-white/6 overflow-hidden min-w-0 shadow-2xl">
+      <div className="flex flex-col flex-1 glass-card rounded-3xl border border-white/6 overflow-hidden min-w-0">
 
         {/* Chat Header */}
-        <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-white/6 bg-dark/60 backdrop-blur-2xl shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/6 glass-dark shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary/25">
               {profile?.name?.[0] || '?'}
@@ -273,7 +273,7 @@ const Chat = () => {
         </div>
 
         {/* Messages Area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-4 scroll-smooth">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-4 scroll-smooth">
 
           {/* Empty state */}
           {messages.length === 0 && !loading && !initialLoad && (
@@ -381,7 +381,7 @@ const Chat = () => {
         </div>
 
         {/* Input Area */}
-        <div className="px-4 md:px-6 py-4 border-t border-white/6 bg-dark/60 backdrop-blur-2xl shrink-0">
+        <div className="px-6 py-4 border-t border-white/6 glass-dark shrink-0">
 
           {/* Quota banner */}
           {isQuotaError && (
@@ -392,14 +392,26 @@ const Chat = () => {
 
           <form onSubmit={handleSend} className="flex items-end gap-3">
 
-            {/* Voice Recorder */}
-            <VoiceRecorder
-              onVoiceResult={handleVoiceResult}
-              onError={(msg) => setVoiceError(msg)}
-              disabled={loading || isQuotaError}
-              voiceType={voiceType}
-              onStateChange={(state) => setVoiceMode(state !== 'idle')}
-            />
+            {/* Voice Recorder or mic button */}
+            <AnimatePresence mode="wait">
+              {voiceMode ? (
+                <VoiceRecorder
+                  key="recorder"
+                  onVoiceResult={handleVoiceResult}
+                  onError={(msg) => { setVoiceError(msg); setVoiceMode(false); }}
+                  disabled={loading || isQuotaError}
+                  voiceType={voiceType}
+                />
+              ) : (
+                <VoiceRecorder
+                  key="idle-recorder"
+                  onVoiceResult={handleVoiceResult}
+                  onError={(msg) => setVoiceError(msg)}
+                  disabled={loading || isQuotaError}
+                  voiceType={voiceType}
+                />
+              )}
+            </AnimatePresence>
 
             {/* Text input — hidden while in voice mode */}
             {!voiceMode && (

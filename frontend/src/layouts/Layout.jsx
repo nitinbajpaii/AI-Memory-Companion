@@ -16,7 +16,7 @@ const Layout = ({ children }) => {
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
-          <div className="flex-1 flex flex-col h-full">
+          <div className="flex-1">
             <AnimatePresence mode="wait">
               <motion.div
                 key={window.location.pathname}
@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
-                className="flex-1 flex flex-col max-w-7xl w-full mx-auto p-4 md:p-8 h-full"
+                className="max-w-7xl mx-auto p-6 md:p-8"
               >
                 {children}
               </motion.div>
