@@ -24,9 +24,9 @@ const footerNav = {
 };
 
 const socialsRaw = [
-  { label: 'Website',  href: '#',                            icon: Globe },
-  { label: 'Email',    href: 'mailto:support.aimemorycompanion.com',  icon: Mail },
-  { label: 'Docs',     href: '#',                            icon: ExternalLink },
+  { label: 'Website',  href: 'https://github.com/nitinbajpaii/AI-Memory-Companion',                            icon: Globe },
+  { label: 'Email',    href: 'mailto:support.aimemorycompanion@gmail.com',  icon: Mail },
+  { label: 'Docs',     href: 'https://ai-memory-companion-weld.vercel.app/',                            icon: ExternalLink },
 ];
 
 const Footer = () => {
