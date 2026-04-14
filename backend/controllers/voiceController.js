@@ -10,15 +10,15 @@ const Chat                 = require('../models/Chat');
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Transcribe audio buffer → text using Gemini 1.5 Flash multimodal.
+ * Transcribe audio buffer → text using Gemini 2.5 Flash multimodal.
  */
 async function transcribeAudio(audioBuffer, mimeType) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not set');
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  // gemini-1.5-flash supports audio inlineData
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  // gemini-2.5-flash supports audio inlineData
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   // ── Clean & Normalize mimeType ───────────────────────────────────────────
   let normalizedMimeType = mimeType || 'audio/webm';

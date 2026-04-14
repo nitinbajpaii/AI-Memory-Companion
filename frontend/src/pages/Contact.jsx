@@ -58,7 +58,16 @@ const faqs = [
 
 /* ── Mini Nav ── */
 const MiniNav = () => {
-  const user = JSON.parse(localStorage.getItem('user'));
+  // Robust check for user session
+  const userStr = localStorage.getItem('user');
+  let user = null;
+  try {
+    if (userStr && userStr !== 'null' && userStr !== 'undefined') {
+      user = JSON.parse(userStr);
+    }
+  } catch (e) {
+    user = null;
+  }
 
   return (
     <nav className="glass-dark border-b border-white/6 px-8 py-4 flex items-center justify-between sticky top-0 z-20">

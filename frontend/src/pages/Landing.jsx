@@ -62,11 +62,20 @@ const LandingNav = () => {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-          {['#features', '#how-it-works', '#testimonials', '#about'].map((href, i) => (
-            <a key={href} href={href} className="text-gray-400 hover:text-white transition-colors">
-              {['Features', 'How It Works', 'Testimonials', 'About'][i]}
-            </a>
-          ))}
+          {['#features', '#how-it-works', '#testimonials', '/about', '/contact'].map((href, i) => {
+            const label = ['Features', 'How It Works', 'Testimonials', 'About', 'Contact'][i];
+            const isExternal = href.startsWith('/');
+            
+            return isExternal ? (
+              <Link key={href} to={href} className="text-gray-400 hover:text-white transition-colors">
+                {label}
+              </Link>
+            ) : (
+              <a key={href} href={href} className="text-gray-400 hover:text-white transition-colors">
+                {label}
+              </a>
+            );
+          })}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -103,11 +112,20 @@ const LandingNav = () => {
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden glass-dark border-t border-white/6 px-6 py-6 space-y-4"
         >
-          {['#features', '#how-it-works', '#testimonials', '#about'].map((href, i) => (
-            <a key={href} href={href} onClick={() => setMobileOpen(false)} className="block text-gray-400 hover:text-white transition-colors py-2">
-              {['Features', 'How It Works', 'Testimonials', 'About'][i]}
-            </a>
-          ))}
+          {['#features', '#how-it-works', '#testimonials', '/about', '/contact'].map((href, i) => {
+            const label = ['Features', 'How It Works', 'Testimonials', 'About', 'Contact'][i];
+            const isExternal = href.startsWith('/');
+
+            return isExternal ? (
+              <Link key={href} to={href} onClick={() => setMobileOpen(false)} className="block text-gray-400 hover:text-white transition-colors py-2">
+                {label}
+              </Link>
+            ) : (
+              <a key={href} href={href} onClick={() => setMobileOpen(false)} className="block text-gray-400 hover:text-white transition-colors py-2">
+                {label}
+              </a>
+            );
+          })}
           <div className="flex gap-3 pt-2">
             {user ? (
               <Link to="/dashboard" className="w-full">

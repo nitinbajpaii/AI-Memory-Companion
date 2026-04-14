@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Menu, Heart, LayoutDashboard } from 'lucide-react';
+import { Home, Menu, Heart, LayoutDashboard, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProfileDropdown from './ProfileDropdown';
 
@@ -43,6 +43,13 @@ const Navbar = ({ onMenuClick }) => {
             <LayoutDashboard size={14} />
             Dashboard
           </div>
+          <Link
+            to="/contact"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] transition-all duration-200 text-xs font-semibold group"
+          >
+            <Mail size={14} className="group-hover:scale-110 transition-transform" />
+            Contact
+          </Link>
         </div>
       </div>
 

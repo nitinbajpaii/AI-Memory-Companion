@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, LayoutDashboard, MessageCircle, Heart,
-  User, Settings, LogOut, X, Sparkles,
+  User, Settings, LogOut, X, Sparkles, Mail
 } from 'lucide-react';
 
 const navItems = [
@@ -12,6 +12,8 @@ const navItems = [
   { name: 'Memories',    path: '/memories',   icon: Heart,           color: 'text-pink-400'   },
   { name: 'Loved One',   path: '/profile',    icon: User,            color: 'text-emerald-400'},
   { name: 'Settings',    path: '/settings',   icon: Settings,        color: 'text-gray-400'   },
+  { name: 'About Us',    path: '/about',      icon: Sparkles,        color: 'text-amber-400'  },
+  { name: 'Contact Us',  path: '/contact',     icon: Mail,            color: 'text-primary'    },
 ];
 
 /* ── Framer Motion variants for the list ── */
