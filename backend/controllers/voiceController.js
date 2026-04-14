@@ -44,21 +44,21 @@ async function transcribeAudio(audioBuffer, mimeType) {
     'audio/3gp':      'audio/3gpp',
     'audio/3gpp':     'audio/3gpp',
     'audio/x-3gpp':   'audio/3gpp',
-    'video/webm':     'audio/webm', // Common on some mobile browsers
-    'video/mp4':      'audio/mp4',  // Common on iOS Safari
-    'application/octet-stream': 'audio/webm', // Fallback for missing type
+    'video/webm':     'audio/webm',
+    'video/mp4':      'audio/mp4',
+    'application/octet-stream': 'audio/webm', 
   };
 
   if (mimeMap[baseMimeType]) {
     baseMimeType = mimeMap[baseMimeType];
   }
 
-  // Ensure it starts with audio/ (unless we mapped it specifically)
+  // Final validation: Ensure it starts with audio/ or we fallback
   if (!baseMimeType.startsWith('audio/') && !baseMimeType.startsWith('video/')) {
     baseMimeType = 'audio/webm';
   }
 
-  console.log(`[STT] Processing: ${audioBuffer.length} bytes | Detected: ${mimeType} | Normalized: ${baseMimeType}`);
+  console.log(`[STT] Buffer size: ${audioBuffer.length} bytes | Original mime: ${mimeType} | Sending to Gemini as: ${baseMimeType}`);
 
   if (!audioBuffer || audioBuffer.length === 0) {
     throw new Error('EMPTY_AUDIO_BUFFER');
@@ -73,14 +73,12 @@ async function transcribeAudio(audioBuffer, mimeType) {
 
   try {
     const result = await model.generateContent([
-      'Transcribe the following audio message to plain text. ' +
-      'Return ONLY the spoken words — no explanations, no punctuation notes, just the transcription.',
+      { text: 'Transcribe the following audio message to plain text. Return ONLY the spoken words — no explanations, no punctuation notes, just the transcription.' },
       audioPart,
     ]);
 
     const text = result.response.text().trim();
     
-    // Check if Gemini actually transcribed something or just returned empty
     if (!text || text.length < 1) {
       console.warn('[STT] Gemini returned empty response.');
       throw new Error('NO_SPEECH_DETECTED');
@@ -88,20 +86,24 @@ async function transcribeAudio(audioBuffer, mimeType) {
 
     return text;
   } catch (err) {
-    console.error('[STT] Gemini Transcription error:', err.message);
+    console.error('[STT] Gemini transcription error details:', {
+      message: err.message,
+      stack:   err.stack,
+      status:  err.status,
+      details: err.response?.data || 'No response data'
+    });
     
-    // Categorize errors for better UX
     if (err.message.includes('safety') || err.message.includes('blocked')) {
       throw new Error('SAFETY_BLOCKED');
     }
-    if (err.message === 'NO_SPEECH_DETECTED') {
+    if (err.message === 'NO_SPEECH_DETECTED' || err.message === 'EMPTY_AUDIO_BUFFER') {
       throw err;
     }
     if (err.message.includes('quota') || err.message.includes('429')) {
       throw new Error('QUOTA_EXCEEDED');
     }
     
-    throw new Error('TRANSCRIPTION_SERVICE_ERROR');
+    throw new Error(`TRANSCRIPTION_SERVICE_ERROR: ${err.message}`);
   }
 }
 
@@ -221,11 +223,20 @@ User voice message: ${transcript}
 const handleVoiceChat = async (req, res) => {
   try {
     // ── 0. Validate upload ────────────────────────────────────────────────────
+    console.log('[Voice] Request received:', {
+      file: req.file ? {
+        originalname: req.file.originalname,
+        mimetype:     req.file.mimetype,
+        size:         req.file.size
+      } : 'No file',
+      body: req.body
+    });
+
     if (!req.file) {
       return res.status(400).json({
         success:   false,
         errorType: 'NO_AUDIO',
-        message:   'No audio file received.',
+        message:   'No audio file received. Please ensure the field name is "audio".',
       });
     }
 
