@@ -1,147 +1,171 @@
-const axios                = require('axios');
+const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { getAIResponse }    = require('../services/geminiService');
-const LovedOneProfile      = require('../models/LovedOneProfile');
-const Memory               = require('../models/Memory');
-const Chat                 = require('../models/Chat');
+const { getAIResponse } = require('../services/geminiService');
+const LovedOneProfile = require('../models/LovedOneProfile');
+const Memory = require('../models/Memory');
+const Chat = require('../models/Chat');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Transcribe audio buffer → text using Gemini 2.5 Flash multimodal.
- */
 async function transcribeAudio(audioBuffer, mimeType) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not set');
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  // gemini-2.5-flash supports audio inlineData
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+  });
 
-  // ── Clean & Normalize mimeType ───────────────────────────────────────────
   let normalizedMimeType = mimeType || 'audio/webm';
-  if (normalizedMimeType === "audio/mp3") normalizedMimeType = "audio/mpeg"; 
-  if (normalizedMimeType === "audio/x-wav") normalizedMimeType = "audio/wav"; 
-  if (normalizedMimeType === "audio/m4a") normalizedMimeType = "audio/mp4"; 
-  if (normalizedMimeType === "audio/3gpp") normalizedMimeType = "audio/mp4"; 
-  if (normalizedMimeType.includes("webm")) normalizedMimeType = "audio/webm";
+
+  if (normalizedMimeType === 'audio/mp3')
+    normalizedMimeType = 'audio/mpeg';
+
+  if (normalizedMimeType === 'audio/x-wav')
+    normalizedMimeType = 'audio/wav';
+
+  if (normalizedMimeType === 'audio/m4a')
+    normalizedMimeType = 'audio/mp4';
+
+  if (normalizedMimeType === 'audio/3gpp')
+    normalizedMimeType = 'audio/mp4';
+
+  if (normalizedMimeType.includes('webm'))
+    normalizedMimeType = 'audio/webm';
 
   if (!audioBuffer || audioBuffer.length === 0) {
     throw new Error('EMPTY_AUDIO_BUFFER');
   }
-  console.log("buffer length", audioBuffer.length);
-  const audioBase64 = audioBuffer.toString("base64");
+
+  console.log('[STT] buffer length:', audioBuffer.length);
+
+  const audioBase64 = audioBuffer.toString('base64');
 
   try {
     const result = await model.generateContent([
       {
         inlineData: {
           mimeType: normalizedMimeType,
-          data:     audioBase64,
+          data: audioBase64,
         },
       },
       {
-        text: "Transcribe this audio exactly and return only the spoken text.",
+        text: 'Transcribe this audio exactly and return only the spoken text.',
       },
     ]);
 
-    const transcription = result.response.text().trim();
-    console.log("Gemini transcription response:", transcription);
-    
+    const transcription = result.response.text()?.trim();
+
+    console.log('[STT] Gemini response:', transcription);
+
     if (!transcription) {
-      console.warn('[STT] Gemini returned empty response.');
       throw new Error('NO_SPEECH_DETECTED');
     }
 
     return transcription;
   } catch (err) {
-    console.error("Gemini transcription error:", err.response?.data || err.message);
-    
-    if (err.message.includes('safety') || err.message.includes('blocked')) {
+    console.error(
+      '[STT] Gemini transcription error:',
+      err.response?.data || err.message
+    );
+
+    const msg = err.message || '';
+
+    if (msg.includes('safety') || msg.includes('blocked')) {
       throw new Error('SAFETY_BLOCKED');
     }
-    if (err.message === 'NO_SPEECH_DETECTED') {
+
+    if (msg === 'NO_SPEECH_DETECTED') {
       throw err;
     }
-    if (err.message.includes('quota') || err.message.includes('429')) {
+
+    if (msg.includes('quota') || msg.includes('429')) {
       throw new Error('QUOTA_EXCEEDED');
     }
-    
-    throw new Error(`TRANSCRIPTION_SERVICE_ERROR: ${err.message}`);
+
+    if (
+      msg.includes('404') ||
+      msg.includes('model') ||
+      msg.includes('not found')
+    ) {
+      throw new Error('MODEL_NOT_FOUND');
+    }
+
+    throw new Error('TRANSCRIPTION_SERVICE_ERROR');
   }
 }
 
-/**
- * Call ElevenLabs Text-to-Speech API.
- * Returns a Buffer containing MP3 audio (or throws on failure).
- */
 async function generateElevenLabsAudio(text, voiceType = 'female') {
   const apiKey = process.env.ELEVENLABS_API_KEY;
+
   const voiceId =
     voiceType === 'male'
       ? process.env.ELEVENLABS_VOICE_ID_MALE
       : process.env.ELEVENLABS_VOICE_ID_FEMALE;
 
-  console.log(`[ElevenLabs] Debug: voiceType=${voiceType}, voiceId=${voiceId}, apiKeyExists=${!!apiKey}`);
+  console.log(
+    `[ElevenLabs] Debug: voiceType=${voiceType}, voiceId=${voiceId}, apiKeyExists=${!!apiKey}`
+  );
 
   if (!apiKey) {
-    console.error('[ElevenLabs] Error: ELEVENLABS_API_KEY is not set in environment variables.');
     throw new Error('ELEVENLABS_API_KEY not set');
   }
+
   if (!voiceId) {
-    console.error(`[ElevenLabs] Error: ELEVENLABS_VOICE_ID_${voiceType.toUpperCase()} is not set.`);
-    throw new Error(`ELEVENLABS_VOICE_ID_${voiceType.toUpperCase()} not set`);
+    throw new Error(
+      `ELEVENLABS_VOICE_ID_${voiceType.toUpperCase()} not set`
+    );
   }
 
-  // Trim to ElevenLabs limits (2500 chars on free tier)
   const trimmedText = text.slice(0, 2500);
 
   try {
-    console.log(`[ElevenLabs] Sending request to voiceId: ${voiceId}`);
     const response = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       {
         text: trimmedText,
         model_id: 'eleven_multilingual_v2',
         voice_settings: {
-          stability:        0.5,
+          stability: 0.5,
           similarity_boost: 0.75,
-          style:            0.0,
+          style: 0.0,
           use_speaker_boost: true,
         },
       },
       {
         headers: {
-          'xi-api-key':   apiKey,
+          'xi-api-key': apiKey,
           'Content-Type': 'application/json',
-          Accept:         'audio/mpeg',
+          Accept: 'audio/mpeg',
         },
         responseType: 'arraybuffer',
-        timeout: 30_000,
+        timeout: 30000,
       }
     );
 
-    console.log(`[ElevenLabs] Response Status: ${response.status}`);
     return Buffer.from(response.data);
   } catch (err) {
     if (err.response) {
-      console.error(`[ElevenLabs] API Error Status: ${err.response.status}`);
-      console.error(`[ElevenLabs] API Error Data:`, err.response.data?.toString() || 'No data');
-      
-      if (err.response.status === 401) throw new Error('ELEVENLABS_INVALID_KEY');
-      if (err.response.status === 429) throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
-    } else {
-      console.error(`[ElevenLabs] Network/Request Error: ${err.message}`);
+      console.error(
+        '[ElevenLabs] API Error:',
+        err.response.status
+      );
+
+      if (err.response.status === 401) {
+        throw new Error('ELEVENLABS_INVALID_KEY');
+      }
+
+      if (err.response.status === 429) {
+        throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
+      }
     }
-    throw err;
+
+    throw new Error('ELEVENLABS_SERVICE_ERROR');
   }
 }
 
-/**
- * Build the prompt for Gemini using user's profile + memories context.
- */
 async function buildPrompt(userId, transcript) {
   const [profile, memories] = await Promise.all([
     LovedOneProfile.findOne({ userId }),
@@ -149,7 +173,9 @@ async function buildPrompt(userId, transcript) {
   ]);
 
   const memoryContext = memories.length
-    ? memories.map(m => `- ${m.memoryText} (${m.emotionTag})`).join('\n')
+    ? memories
+        .map((m) => `- ${m.memoryText} (${m.emotionTag})`)
+        .join('\n')
     : 'No memories added yet.';
 
   if (profile) {
@@ -157,43 +183,23 @@ async function buildPrompt(userId, transcript) {
 You are an emotionally intelligent AI companion inspired by the memories of ${profile.name}, who was the user's ${profile.relation}.
 
 CRITICAL RULES:
-- You are NOT ${profile.name}. You are an AI inspired by their life — never impersonate them.
-- Your goal: comfort, grief support, memory healing.
-
-PERSONA:
-- Name: ${profile.name}
-- Personality: ${profile.personality}
-- Habits: ${profile.habits}
-- Common Phrases: ${profile.commonPhrases}
+- You are NOT ${profile.name}
+- Comfort and healing only
+- Speak warm Hinglish
+- Keep reply concise (2-4 lines)
 
 MEMORIES:
 ${memoryContext}
-
-TONE:
-- Warm, empathetic, calm — like a close friend.
-- Speak in natural Hinglish (Hindi + English mix) if appropriate.
-- Encourage real-world connections; avoid unhealthy dependency.
-- Keep response concise (2-4 sentences) since this is a voice reply.
-
-EMOTIONAL GUIDANCE:
-- SAD user → validate feelings gently, share a comforting memory.
-- LONELY user → be present, encourage reaching out to others.
-- NORMAL user → reminisce warmly, offer gentle support.
 
 User voice message: ${transcript}
 `.trim();
   }
 
   return `
-You are a warm, emotionally intelligent grief support companion called "AI Memory Companion".
-The user hasn't created a loved one profile yet.
+You are a warm grief support AI companion.
 
-GUIDELINES:
-- Be kind, gentle, and supportive.
-- Gently invite them to add a profile for a more personal experience.
-- Keep response concise (2-4 sentences) since this is a voice reply.
-- Speak warmly in English or Hinglish.
-- Never pretend to be a real person.
+Be kind, gentle and supportive.
+Keep reply concise (2-4 lines)
 
 User voice message: ${transcript}
 `.trim();
@@ -205,111 +211,124 @@ User voice message: ${transcript}
 
 const handleVoiceChat = async (req, res) => {
   try {
-    // ── 0. Validate upload ────────────────────────────────────────────────────
-    console.log('[Voice] Request received:', {
-      file: req.file ? {
-        originalname: req.file.originalname,
-        mimetype:     req.file.mimetype,
-        size:         req.file.size
-      } : 'No file',
-      body: req.body
-    });
-
     if (!req.file) {
       return res.status(400).json({
-        success:   false,
+        success: false,
         errorType: 'NO_AUDIO',
-        message:   'No audio file received. Please ensure the field name is "audio".',
+        message: 'No audio file received.',
       });
     }
 
     const voiceType = (req.body.voiceType || 'female').toLowerCase();
-    const userId    = req.user._id;
+    const userId = req.user._id;
 
-    console.log(`[Voice] Received audio (${req.file.size} bytes, ${req.file.mimetype}) | voiceType: ${voiceType}`);
-
-    // ── 1. Speech → Text (Gemini multimodal) ──────────────────────────────────
     let transcript;
-    try {
-      transcript = await transcribeAudio(req.file.buffer, req.file.mimetype);
-      console.log('[Voice] Transcript:', transcript.slice(0, 120));
-    } catch (err) {
-      console.error('[Voice] Transcription failed:', err.message);
 
-      // Map internal errors to user-friendly messages
+    try {
+      transcript = await transcribeAudio(
+        req.file.buffer,
+        req.file.mimetype
+      );
+    } catch (err) {
       const errorMap = {
-        'EMPTY_AUDIO_BUFFER':           'The audio file appears to be empty. Please record again.',
-        'NO_SPEECH_DETECTED':           'No speech was detected in your recording. Please speak clearly.',
-        'SAFETY_BLOCKED':               'Voice content was blocked by safety filters. Please try again.',
-        'QUOTA_EXCEEDED':               'Daily transcription limit reached. Please try again tomorrow.',
-        'TRANSCRIPTION_SERVICE_ERROR':  'AI transcription service is temporarily unavailable. Please try again.',
+        EMPTY_AUDIO_BUFFER:
+          'The audio file appears to be empty.',
+
+        NO_SPEECH_DETECTED:
+          'No speech detected. Please speak clearly.',
+
+        SAFETY_BLOCKED:
+          'Voice content blocked by safety filters.',
+
+        QUOTA_EXCEEDED:
+          'Daily transcription limit reached.',
+
+        MODEL_NOT_FOUND:
+          'Gemini model configuration issue.',
+
+        TRANSCRIPTION_SERVICE_ERROR:
+          'AI transcription service temporarily unavailable.',
       };
 
-      const message = errorMap[err.message] || `Could not process audio: ${err.message || 'Unknown error'}`;
-      
+      const message =
+        errorMap[err.message] ||
+        'Could not process audio. Please try again.';
+
       return res.status(422).json({
-        success:   false,
-        errorType: err.message === 'QUOTA_EXCEEDED' ? 'QUOTA_EXCEEDED' : 'TRANSCRIPTION_FAILED',
-        message:   message,
+        success: false,
+        errorType: err.message,
+        message,
       });
     }
 
-    // ── 2. Save user voice message ─────────────────────────────────────────────
-    await Chat.create({ userId, role: 'user', content: `🎤 ${transcript}` });
+    await Chat.create({
+      userId,
+      role: 'user',
+      content: `🎤 ${transcript}`,
+    });
 
-    // ── 3. Text → AI reply (Gemini) ────────────────────────────────────────────
-    const prompt     = await buildPrompt(userId, transcript);
-    const aiResponse = await getAIResponse(prompt, transcript.slice(0, 80));
+    const prompt = await buildPrompt(userId, transcript);
+
+    const aiResponse = await getAIResponse(
+      prompt,
+      transcript.slice(0, 80)
+    );
 
     if (!aiResponse.success) {
-      const httpStatus =
-        aiResponse.errorType === 'QUOTA_EXCEEDED'    ? 429 :
-        aiResponse.errorType === 'TEMPORARY_FAILURE' ? 503 : 500;
-
-      return res.status(httpStatus).json({
-        success:   false,
-        errorType: aiResponse.errorType,
-        message:   aiResponse.message,
+      return res.status(500).json({
+        success: false,
+        message: aiResponse.message,
       });
     }
 
-    const aiText = aiResponse.text;
-    await Chat.create({ userId, role: 'assistant', content: aiText });
+    const aiText =
+      aiResponse.text ||
+      'Main yahin hoon, tum akela feel mat karo 💜';
 
-    // ── 4. Text → Audio (ElevenLabs) ──────────────────────────────────────────
+    await Chat.create({
+      userId,
+      role: 'assistant',
+      content: aiText,
+    });
+
     let audioBase64 = null;
     let ttsError = null;
+
     try {
-      const audioBuffer = await generateElevenLabsAudio(aiText, voiceType);
-      audioBase64       = audioBuffer.toString('base64');
-      console.log('[Voice] ElevenLabs audio generated successfully');
+      const audioBuffer = await generateElevenLabsAudio(
+        aiText,
+        voiceType
+      );
+
+      audioBase64 = audioBuffer.toString('base64');
     } catch (err) {
-      console.error('[Voice] ElevenLabs TTS failed:', err.message);
-      if (err.message === 'ELEVENLABS_QUOTA_EXCEEDED') {
-        ttsError = 'ElevenLabs quota exceeded. AI will reply with text only.';
-      } else if (err.message === 'ELEVENLABS_INVALID_KEY') {
-        ttsError = 'ElevenLabs API key is invalid. AI will reply with text only.';
+      if (err.message.includes('QUOTA')) {
+        ttsError =
+          'ElevenLabs quota exceeded. AI will reply with text only.';
+      } else if (err.message.includes('INVALID_KEY')) {
+        ttsError =
+          'ElevenLabs API key is invalid. AI will reply with text only.';
       } else {
-        ttsError = 'AI voice service temporarily unavailable. AI will reply with text only.';
+        ttsError =
+          'AI voice service temporarily unavailable.';
       }
     }
 
-    // ── 5. Respond ────────────────────────────────────────────────────────────
     return res.json({
-      success:    true,
-      transcript,               // what Gemini heard the user say
-      text:       aiText,       // AI text reply
-      audio:      audioBase64,  // base64 MP3 string (null if TTS failed)
+      success: true,
+      transcript,
+      text: aiText,
+      audio: audioBase64,
       voiceType,
-      ttsError,                 // pass non-fatal TTS error to frontend
+      ttsError,
     });
-
   } catch (err) {
-    console.error('[Voice Controller] Unhandled error:', err.message || err);
+    console.error('[Voice Controller Error]:', err);
+
     return res.status(500).json({
-      success:   false,
+      success: false,
       errorType: 'SERVER_ERROR',
-      message:   'Voice processing failed. Please try again.',
+      message: 'Voice processing failed.',
     });
   }
 };
