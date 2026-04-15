@@ -84,22 +84,31 @@ async function generateElevenLabsAudio(text, voiceType = 'female') {
       ? process.env.ELEVENLABS_VOICE_ID_MALE
       : process.env.ELEVENLABS_VOICE_ID_FEMALE;
 
-  if (!apiKey)   throw new Error('ELEVENLABS_API_KEY not set');
-  if (!voiceId)  throw new Error(`ELEVENLABS_VOICE_ID_${voiceType.toUpperCase()} not set`);
+  console.log(`[ElevenLabs] Debug: voiceType=${voiceType}, voiceId=${voiceId}, apiKeyExists=${!!apiKey}`);
+
+  if (!apiKey) {
+    console.error('[ElevenLabs] Error: ELEVENLABS_API_KEY is not set in environment variables.');
+    throw new Error('ELEVENLABS_API_KEY not set');
+  }
+  if (!voiceId) {
+    console.error(`[ElevenLabs] Error: ELEVENLABS_VOICE_ID_${voiceType.toUpperCase()} is not set.`);
+    throw new Error(`ELEVENLABS_VOICE_ID_${voiceType.toUpperCase()} not set`);
+  }
 
   // Trim to ElevenLabs limits (2500 chars on free tier)
   const trimmedText = text.slice(0, 2500);
 
   try {
+    console.log(`[ElevenLabs] Sending request to voiceId: ${voiceId}`);
     const response = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       {
         text: trimmedText,
         model_id: 'eleven_multilingual_v2',
         voice_settings: {
-          stability:        0.55,
-          similarity_boost: 0.80,
-          style:            0.25,
+          stability:        0.5,
+          similarity_boost: 0.75,
+          style:            0.0,
           use_speaker_boost: true,
         },
       },
@@ -114,10 +123,18 @@ async function generateElevenLabsAudio(text, voiceType = 'female') {
       }
     );
 
+    console.log(`[ElevenLabs] Response Status: ${response.status}`);
     return Buffer.from(response.data);
   } catch (err) {
-    if (err.response?.status === 401) throw new Error('ELEVENLABS_INVALID_KEY');
-    if (err.response?.status === 429) throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
+    if (err.response) {
+      console.error(`[ElevenLabs] API Error Status: ${err.response.status}`);
+      console.error(`[ElevenLabs] API Error Data:`, err.response.data?.toString() || 'No data');
+      
+      if (err.response.status === 401) throw new Error('ELEVENLABS_INVALID_KEY');
+      if (err.response.status === 429) throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
+    } else {
+      console.error(`[ElevenLabs] Network/Request Error: ${err.message}`);
+    }
     throw err;
   }
 }
