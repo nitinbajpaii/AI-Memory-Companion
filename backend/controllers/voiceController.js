@@ -99,71 +99,89 @@ async function transcribeAudio(audioBuffer, mimeType) {
 
 async function generateElevenLabsAudio(text, voiceType = 'female') {
   const apiKey = process.env.ELEVENLABS_API_KEY;
-
-  const voiceId =
+  let voiceId =
     voiceType === 'male'
       ? process.env.ELEVENLABS_VOICE_ID_MALE
       : process.env.ELEVENLABS_VOICE_ID_FEMALE;
 
-  console.log(
-    `[ElevenLabs] Debug: voiceType=${voiceType}, voiceId=${voiceId}, apiKeyExists=${!!apiKey}`
-  );
+  if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set');
 
-  if (!apiKey) {
-    throw new Error('ELEVENLABS_API_KEY not set');
-  }
+  // Detect key type and set headers
+  const headers = {
+    'Content-Type': 'application/json',
+    Accept: 'audio/mpeg',
+  };
 
-  if (!voiceId) {
-    throw new Error(
-      `ELEVENLABS_VOICE_ID_${voiceType.toUpperCase()} not set`
-    );
+  const isNewKey = apiKey.startsWith('sk_');
+  console.log(`[ElevenLabs] Key type detected: ${isNewKey ? 'sk_' : 'xi-'}`);
+
+  if (isNewKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  } else {
+    headers['xi-api-key'] = apiKey;
   }
 
   const trimmedText = text.slice(0, 2500);
+  const DEFAULT_VOICE = '21m00Tcm4TlvDq8ikWAM'; // Rachel (Default fallback)
+  const voicesToTry = [voiceId, DEFAULT_VOICE].filter(Boolean);
 
-  try {
-    const response = await axios.post(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      {
-        text: trimmedText,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-          style: 0.0,
-          use_speaker_boost: true,
-        },
-      },
-      {
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-          Accept: 'audio/mpeg',
-        },
-        responseType: 'arraybuffer',
-        timeout: 30000,
-      }
-    );
+  let lastError = null;
 
-    return Buffer.from(response.data);
-  } catch (err) {
-    if (err.response) {
-      console.error(
-        '[ElevenLabs] API Error:',
-        err.response.status
+  for (const currentVoiceId of voicesToTry) {
+    try {
+      console.log(`[ElevenLabs] Attempting TTS with voiceId: ${currentVoiceId}`);
+
+      const response = await axios.post(
+        `https://api.elevenlabs.io/v1/text-to-speech/${currentVoiceId}`,
+        {
+          text: trimmedText,
+          model_id: 'eleven_monolingual_v1', // Safe for free tier
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.0,
+            use_speaker_boost: true,
+          },
+        },
+        {
+          headers,
+          responseType: 'arraybuffer',
+          timeout: 30000,
+        }
       );
 
-      if (err.response.status === 401) {
-        throw new Error('ELEVENLABS_INVALID_KEY');
+      console.log(`[ElevenLabs] Success! Status: ${response.status}`);
+      return Buffer.from(response.data);
+    } catch (err) {
+      lastError = err;
+      const status = err.response?.status;
+      console.error(
+        `[ElevenLabs] Failed for voiceId ${currentVoiceId}. Status: ${
+          status || 'Network Error'
+        }`
+      );
+
+      if (status === 401) {
+        console.error(
+          '[ElevenLabs] Auth Error: Check if API key is valid or if custom voice is restricted.'
+        );
       }
 
-      if (err.response.status === 429) {
-        throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
+      // If we still have a fallback voice to try, continue
+      if (currentVoiceId !== DEFAULT_VOICE && voicesToTry.includes(DEFAULT_VOICE)) {
+        console.log('[ElevenLabs] Retrying with default fallback voice...');
+        continue;
       }
+      break;
     }
-
-    throw new Error('ELEVENLABS_SERVICE_ERROR');
   }
+
+  // If all attempts failed, handle the last error
+  if (lastError.response) {
+    if (lastError.response.status === 401) throw new Error('ELEVENLABS_INVALID_KEY');
+    if (lastError.response.status === 429) throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
+  }
+  throw new Error('ELEVENLABS_SERVICE_ERROR');
 }
 
 async function buildPrompt(userId, transcript) {
