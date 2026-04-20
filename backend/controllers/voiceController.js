@@ -106,68 +106,19 @@ async function generateElevenLabsAudio(text, voiceType = 'female') {
 
   if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set');
 
-  // ── 1. Build auth headers based on key format ──────────────────────────────
-  const isSkKey = apiKey.startsWith('sk_');
-  console.log(`[ElevenLabs] Key type detected: ${isSkKey ? 'sk_' : 'xi-'}`);
+  const DEFAULT_VOICE = '21m00Tcm4TlvDq8ikWAM';
+  const voiceId = configuredVoiceId || DEFAULT_VOICE;
+  const trimmedText = text.slice(0, 2500);
 
-  const authHeaders = isSkKey
-    ? { Authorization: `Bearer ${apiKey}` }
-    : { 'xi-api-key': apiKey };
+  const headers = {
+    'xi-api-key': apiKey,
+    'Content-Type': 'application/json',
+    Accept: 'audio/mpeg',
+  };
 
-  const baseHeaders = { 'Content-Type': 'application/json', ...authHeaders };
-  const ttsHeaders  = { ...baseHeaders, Accept: 'audio/mpeg' };
+  console.log(`[ElevenLabs] Starting TTS. voiceId: "${voiceId}", voiceType: ${voiceType}`);
 
-  const DEFAULT_VOICE    = '21m00Tcm4TlvDq8ikWAM'; // Rachel – always available
-  const trimmedText      = text.slice(0, 2500);
-
-  // ── 2. Resolve a valid voiceId ─────────────────────────────────────────────
-  let resolvedVoiceId = null;
-
-  try {
-    const voicesRes = await axios.get('https://api.elevenlabs.io/v1/voices', {
-      headers: baseHeaders,
-      timeout: 10000,
-    });
-
-    const availableVoices = voicesRes.data?.voices ?? [];
-    console.log(`[ElevenLabs] Fetched ${availableVoices.length} voice(s) from account.`);
-
-    const ids = availableVoices.map((v) => v.voice_id);
-
-    if (configuredVoiceId && ids.includes(configuredVoiceId)) {
-      resolvedVoiceId = configuredVoiceId;
-      console.log(`[ElevenLabs] Configured voiceId "${resolvedVoiceId}" is valid.`);
-    } else if (configuredVoiceId) {
-      console.warn(
-        `[ElevenLabs] Configured voiceId "${configuredVoiceId}" not found in account. ` +
-        `Falling back to first available voice.`
-      );
-      resolvedVoiceId = ids[0] ?? DEFAULT_VOICE;
-      console.log(`[ElevenLabs] Fallback voiceId selected: "${resolvedVoiceId}"`);
-    } else {
-      resolvedVoiceId = ids[0] ?? DEFAULT_VOICE;
-      console.log(`[ElevenLabs] No voiceId configured. Using: "${resolvedVoiceId}"`);
-    }
-  } catch (fetchErr) {
-    const status = fetchErr.response?.status;
-    console.error(
-      `[ElevenLabs] Could not fetch voices list (status: ${status ?? 'Network Error'}). ` +
-      `Proceeding with configured or default voiceId.`
-    );
-
-    if (status === 401) {
-      // Auth is definitely broken – no point attempting TTS
-      console.error('[ElevenLabs] 401 on /voices – API key is invalid or expired.');
-      throw new Error('ELEVENLABS_INVALID_KEY');
-    }
-
-    // Network hiccup – proceed with what we have
-    resolvedVoiceId = configuredVoiceId ?? DEFAULT_VOICE;
-  }
-
-  // ── 3. Attempt TTS with resolved voice, then hard fallback ─────────────────
-  const voicesToTry = [...new Set([resolvedVoiceId, DEFAULT_VOICE])].filter(Boolean);
-  let lastError = null;
+  const voicesToTry = [...new Set([voiceId, DEFAULT_VOICE])].filter(Boolean);
 
   for (const currentVoiceId of voicesToTry) {
     try {
@@ -177,7 +128,7 @@ async function generateElevenLabsAudio(text, voiceType = 'female') {
         `https://api.elevenlabs.io/v1/text-to-speech/${currentVoiceId}`,
         {
           text: trimmedText,
-          model_id: 'eleven_monolingual_v1',
+          model_id: 'eleven_multilingual_v2',
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,
@@ -185,48 +136,32 @@ async function generateElevenLabsAudio(text, voiceType = 'female') {
             use_speaker_boost: true,
           },
         },
-        { headers: ttsHeaders, responseType: 'arraybuffer', timeout: 30000 }
+        { headers, responseType: 'arraybuffer', timeout: 30000 }
       );
 
-      console.log(`[ElevenLabs] TTS success! Status: ${response.status}, voiceId: "${currentVoiceId}"`);
+      console.log(`[ElevenLabs] TTS success. Status: ${response.status}, voiceId: "${currentVoiceId}"`);
       return Buffer.from(response.data);
     } catch (err) {
-      lastError = err;
       const status = err.response?.status;
+      console.error(`[ElevenLabs] TTS failed for voiceId "${currentVoiceId}". Status: ${status ?? 'Network Error'}`);
 
-      console.error(
-        `[ElevenLabs] TTS failed for voiceId "${currentVoiceId}". Status: ${status ?? 'Network Error'}`
-      );
+      if (status === 429) throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
 
-      if (status === 401) {
-        // We already verified the key works on /voices – this 401 is voice-level permission
-        console.warn(
-          `[ElevenLabs] 401 on TTS for voiceId "${currentVoiceId}" – voice may be restricted. ` +
-          (currentVoiceId !== DEFAULT_VOICE ? 'Trying default fallback voice...' : 'All options exhausted.')
-        );
+      // Try next voice in list; if this was already the fallback, give up
+      if (currentVoiceId === DEFAULT_VOICE) {
+        console.error('[ElevenLabs] All voice options exhausted. Returning null audio.');
+        return null;
       }
 
-      if (status === 429) {
-        // Quota hit – no point retrying other voices
-        throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
-      }
-
-      if (currentVoiceId !== DEFAULT_VOICE) {
-        console.log(`[ElevenLabs] Falling back to default voice "${DEFAULT_VOICE}"...`);
-        continue;
-      }
-
-      break; // DEFAULT_VOICE also failed – give up
+      console.log(`[ElevenLabs] Falling back to default voice "${DEFAULT_VOICE}"...`);
     }
   }
 
-  // ── 4. Surface a meaningful error ──────────────────────────────────────────
-  const finalStatus = lastError?.response?.status;
-
-  if (finalStatus === 401) throw new Error('ELEVENLABS_INVALID_KEY');
-  if (finalStatus === 429) throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
-  throw new Error('ELEVENLABS_SERVICE_ERROR');
+  return null;
 }
+
+
+
 
 async function buildPrompt(userId, transcript) {
   const [profile, memories] = await Promise.all([
@@ -362,7 +297,7 @@ const handleVoiceChat = async (req, res) => {
         voiceType
       );
 
-      audioBase64 = audioBuffer.toString('base64');
+      if (audioBuffer) audioBase64 = audioBuffer.toString('base64');
     } catch (err) {
       if (err.message.includes('QUOTA')) {
         ttsError =
