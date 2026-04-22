@@ -104,21 +104,68 @@ async function generateElevenLabsAudio(text, voiceType = 'female') {
       ? process.env.ELEVENLABS_VOICE_ID_MALE
       : process.env.ELEVENLABS_VOICE_ID_FEMALE;
 
-  if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set');
+  // ── Debug: log key presence (never log the full key) ─────────────────────
+  console.log(`[ElevenLabs] API key present: ${apiKey ? 'YES (length ' + apiKey.length + ')' : 'NO'}`);
+  console.log(`[ElevenLabs] voiceType: ${voiceType} | configuredVoiceId: ${configuredVoiceId || '(not set)'}`);
+
+  if (!apiKey) {
+    console.error('[ElevenLabs] ELEVENLABS_API_KEY is not set in environment variables.');
+    throw new Error('INVALID_API_KEY');
+  }
 
   const DEFAULT_VOICE = '21m00Tcm4TlvDq8ikWAM';
-  const voiceId = configuredVoiceId || DEFAULT_VOICE;
   const trimmedText = text.slice(0, 2500);
 
-  const headers = {
+  const authHeaders = {
     'xi-api-key': apiKey,
     'Content-Type': 'application/json',
     Accept: 'audio/mpeg',
   };
 
-  console.log(`[ElevenLabs] Starting TTS. voiceId: "${voiceId}", voiceType: ${voiceType}`);
+  // ── Step 1: Pre-flight — validate API key & resolve voiceId ──────────────
+  let resolvedVoiceId = configuredVoiceId || DEFAULT_VOICE;
 
-  const voicesToTry = [...new Set([voiceId, DEFAULT_VOICE])].filter(Boolean);
+  try {
+    const voicesRes = await axios.get('https://api.elevenlabs.io/v1/voices', {
+      headers: { 'xi-api-key': apiKey },
+      timeout: 10000,
+    });
+
+    const voices = voicesRes.data?.voices || [];
+    console.log(`[ElevenLabs] Voices fetched: ${voices.length}`);
+
+    const voiceIds = voices.map((v) => v.voice_id);
+
+    if (configuredVoiceId && voiceIds.includes(configuredVoiceId)) {
+      resolvedVoiceId = configuredVoiceId;
+      console.log(`[ElevenLabs] voiceId "${configuredVoiceId}" confirmed in account.`);
+    } else if (configuredVoiceId) {
+      console.warn(`[ElevenLabs] voiceId "${configuredVoiceId}" NOT found in account. Falling back to default "${DEFAULT_VOICE}".`);
+      resolvedVoiceId = DEFAULT_VOICE;
+    } else {
+      console.log(`[ElevenLabs] No configuredVoiceId set. Using default "${DEFAULT_VOICE}".`);
+      resolvedVoiceId = DEFAULT_VOICE;
+    }
+  } catch (prefErr) {
+    const prefStatus = prefErr.response?.status;
+
+    if (prefStatus === 401) {
+      console.error('[ElevenLabs] Pre-flight 401 — API key is invalid or expired.');
+      throw new Error('INVALID_API_KEY');
+    }
+
+    if (prefStatus === 429) {
+      console.error('[ElevenLabs] Pre-flight 429 — quota exceeded.');
+      throw new Error('QUOTA_EXCEEDED');
+    }
+
+    // Network / timeout — proceed with configured or default voice
+    console.warn(`[ElevenLabs] Pre-flight voices fetch failed (${prefStatus ?? 'Network Error'}): ${prefErr.message}. Proceeding with voiceId "${resolvedVoiceId}".`);
+  }
+
+  // ── Step 2: TTS request with fallback chain ───────────────────────────────
+  const voicesToTry = [...new Set([resolvedVoiceId, DEFAULT_VOICE])].filter(Boolean);
+  console.log(`[ElevenLabs] Selected voiceId: "${resolvedVoiceId}" | chain: ${voicesToTry.join(' → ')}`);
 
   for (const currentVoiceId of voicesToTry) {
     try {
@@ -128,7 +175,7 @@ async function generateElevenLabsAudio(text, voiceType = 'female') {
         `https://api.elevenlabs.io/v1/text-to-speech/${currentVoiceId}`,
         {
           text: trimmedText,
-          model_id: 'eleven_multilingual_v2',
+          model_id: 'eleven_monolingual_v1',
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,
@@ -136,28 +183,48 @@ async function generateElevenLabsAudio(text, voiceType = 'female') {
             use_speaker_boost: true,
           },
         },
-        { headers, responseType: 'arraybuffer', timeout: 30000 }
+        { headers: authHeaders, responseType: 'arraybuffer', timeout: 30000 }
       );
 
-      console.log(`[ElevenLabs] TTS success. Status: ${response.status}, voiceId: "${currentVoiceId}"`);
+      console.log(`[ElevenLabs] TTS SUCCESS — status: ${response.status}, voiceId: "${currentVoiceId}", bytes: ${response.data.byteLength}`);
       return Buffer.from(response.data);
     } catch (err) {
       const status = err.response?.status;
-      console.error(`[ElevenLabs] TTS failed for voiceId "${currentVoiceId}". Status: ${status ?? 'Network Error'}`);
+      const errBody = err.response?.data ? Buffer.from(err.response.data).toString().slice(0, 200) : err.message;
 
-      if (status === 429) throw new Error('ELEVENLABS_QUOTA_EXCEEDED');
+      console.error(`[ElevenLabs] TTS failed for voiceId "${currentVoiceId}" — status: ${status ?? 'Network Error'} | reason: ${errBody}`);
 
-      // Try next voice in list; if this was already the fallback, give up
+      if (status === 401) {
+        console.error('[ElevenLabs] 401 during TTS — INVALID_API_KEY');
+        throw new Error('INVALID_API_KEY');
+      }
+
+      if (status === 429) {
+        console.error('[ElevenLabs] 429 during TTS — QUOTA_EXCEEDED');
+        throw new Error('QUOTA_EXCEEDED');
+      }
+
+      if (!err.response) {
+        // Pure network error
+        if (currentVoiceId === voicesToTry[voicesToTry.length - 1]) {
+          console.error('[ElevenLabs] Network error on final voice option — SERVICE_UNAVAILABLE');
+          throw new Error('SERVICE_UNAVAILABLE');
+        }
+        console.log('[ElevenLabs] Network error — trying next voice...');
+        continue;
+      }
+
       if (currentVoiceId === DEFAULT_VOICE) {
-        console.error('[ElevenLabs] All voice options exhausted. Returning null audio.');
-        return null;
+        console.error('[ElevenLabs] Default voice also failed — SERVICE_UNAVAILABLE');
+        throw new Error('SERVICE_UNAVAILABLE');
       }
 
       console.log(`[ElevenLabs] Falling back to default voice "${DEFAULT_VOICE}"...`);
     }
   }
 
-  return null;
+  // Guard — should never reach here
+  throw new Error('SERVICE_UNAVAILABLE');
 }
 
 
@@ -299,15 +366,16 @@ const handleVoiceChat = async (req, res) => {
 
       if (audioBuffer) audioBase64 = audioBuffer.toString('base64');
     } catch (err) {
-      if (err.message.includes('QUOTA')) {
-        ttsError =
-          'ElevenLabs quota exceeded. AI will reply with text only.';
-      } else if (err.message.includes('INVALID_KEY')) {
-        ttsError =
-          'ElevenLabs API key is invalid. AI will reply with text only.';
+      console.error(`[ElevenLabs] TTS error caught in handler — code: ${err.message}`);
+
+      if (err.message === 'INVALID_API_KEY') {
+        ttsError = 'ElevenLabs API key is invalid. AI will reply with text only.';
+      } else if (err.message === 'QUOTA_EXCEEDED') {
+        ttsError = 'ElevenLabs quota exceeded. AI will reply with text only.';
+      } else if (err.message === 'SERVICE_UNAVAILABLE') {
+        ttsError = 'AI voice service temporarily unavailable.';
       } else {
-        ttsError =
-          'AI voice service temporarily unavailable.';
+        ttsError = 'AI voice service encountered an unexpected error.';
       }
     }
 
