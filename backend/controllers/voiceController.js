@@ -15,7 +15,7 @@ async function transcribeAudio(audioBuffer, mimeType) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'models/gemini-1.5-flash',
   });
 
   let normalizedMimeType = mimeType || 'audio/webm';
