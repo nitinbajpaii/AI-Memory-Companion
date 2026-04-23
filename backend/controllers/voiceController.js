@@ -15,7 +15,7 @@ async function transcribeAudio(audioBuffer, mimeType) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-1.5-flash',
   });
 
   let normalizedMimeType = mimeType || 'audio/webm';
@@ -338,16 +338,22 @@ const handleVoiceChat = async (req, res) => {
       transcript.slice(0, 80)
     );
 
-    if (!aiResponse.success) {
-      return res.status(500).json({
-        success: false,
-        message: aiResponse.message,
-      });
-    }
+    const FALLBACK_TEXT = 'Main yahin hoon 💜 thoda system slow hai, par main tumhare saath hoon.';
 
-    const aiText =
-      aiResponse.text ||
-      'Main yahin hoon, tum akela feel mat karo 💜';
+    let aiText;
+
+    if (!aiResponse.success) {
+      // Gemini failed after all retries — use fallback, never send 500
+      console.warn(
+        `[Voice Controller] Gemini failed (${aiResponse.errorType || 'UNKNOWN'}) — using fallback text. Reason: ${aiResponse.message}`
+      );
+      aiText = FALLBACK_TEXT;
+    } else {
+      aiText = aiResponse.text || FALLBACK_TEXT;
+      if (aiResponse.usedFallback) {
+        console.warn('[Voice Controller] Gemini returned fallback text (service degraded).');
+      }
+    }
 
     await Chat.create({
       userId,
@@ -358,25 +364,26 @@ const handleVoiceChat = async (req, res) => {
     let audioBase64 = null;
     let ttsError = null;
 
-    try {
-      const audioBuffer = await generateElevenLabsAudio(
-        aiText,
-        voiceType
-      );
+    if (aiText) {
+      try {
+        const audioBuffer = await generateElevenLabsAudio(aiText, voiceType);
+        if (audioBuffer) audioBase64 = audioBuffer.toString('base64');
+      } catch (err) {
+        console.error(`[ElevenLabs] TTS error caught in handler — code: ${err.message}`);
 
-      if (audioBuffer) audioBase64 = audioBuffer.toString('base64');
-    } catch (err) {
-      console.error(`[ElevenLabs] TTS error caught in handler — code: ${err.message}`);
-
-      if (err.message === 'INVALID_API_KEY') {
-        ttsError = 'ElevenLabs API key is invalid. AI will reply with text only.';
-      } else if (err.message === 'QUOTA_EXCEEDED') {
-        ttsError = 'ElevenLabs quota exceeded. AI will reply with text only.';
-      } else if (err.message === 'SERVICE_UNAVAILABLE') {
-        ttsError = 'AI voice service temporarily unavailable.';
-      } else {
-        ttsError = 'AI voice service encountered an unexpected error.';
+        if (err.message === 'INVALID_API_KEY') {
+          ttsError = 'ElevenLabs API key is invalid. AI will reply with text only.';
+        } else if (err.message === 'QUOTA_EXCEEDED') {
+          ttsError = 'ElevenLabs quota exceeded. AI will reply with text only.';
+        } else if (err.message === 'SERVICE_UNAVAILABLE') {
+          ttsError = 'AI voice service temporarily unavailable.';
+        } else {
+          ttsError = 'AI voice service encountered an unexpected error.';
+        }
       }
+    } else {
+      console.warn('[Voice Controller] aiText is empty — skipping ElevenLabs.');
+      ttsError = 'No text available for voice synthesis.';
     }
 
     return res.json({
