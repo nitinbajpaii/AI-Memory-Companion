@@ -23,7 +23,7 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function getAIResponse(prompt, snippet) {
   const client = getGeminiClient();
 
-  // ── Model: gemini-1.5-flash-latest (stable alias, no 404) ──────────────
+  // ── Model: gemini-1.5-flash-latest (stable, multimodal, free-tier) ──────
   const model = client.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
   // ── Backend logs ────────────────────────────────────────────────────────
