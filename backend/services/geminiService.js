@@ -32,7 +32,7 @@ async function getAIResponse(prompt, snippet) {
 
   // ── Backend logs ────────────────────────────────────────────────────────
   console.log('[Gemini API] Request snippet:', snippet || '(no snippet)');
-  console.log('[Gemini API] Model: gemini-1.5-flash | Time:', new Date().toISOString());
+  console.log('[Gemini API] Model: gemini-2.0-flash | Time:', new Date().toISOString());
 
   const MAX_RETRIES  = 3;     // up to 3 retries (4 total attempts)
   const BASE_DELAY   = 1000;  // ms — 1s, 2s, 3s backoff
@@ -42,7 +42,7 @@ async function getAIResponse(prompt, snippet) {
     try {
       // ── New SDK: ai.models.generateContent ──────────────────────────────
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash',
         contents: prompt,
       });
 
