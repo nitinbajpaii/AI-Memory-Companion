@@ -12,9 +12,8 @@ const Chat = require('../models/Chat');
 const _delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function transcribeAudio(audioBuffer, mimeType) {
-  // ── Re-use the singleton Gemini client (no new GoogleGenerativeAI) ──────
-  const client = getGeminiClient();
-  const model  = client.getGenerativeModel({ model: 'gemini-1.5-flash-002' });
+  // ── Re-use the singleton @google/genai client ────────────────────────────────
+  const ai = getGeminiClient();
 
   // ── MIME normalisation ───────────────────────────────────────────────────
   let normalizedMimeType = mimeType || 'audio/webm';
@@ -39,8 +38,9 @@ async function transcribeAudio(audioBuffer, mimeType) {
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      // ── CORRECT multimodal format: { contents: [...] } object ──────────
-      const result = await model.generateContent({
+      // ── New SDK: ai.models.generateContent with multimodal contents format ──
+      const result = await ai.models.generateContent({
+        model: 'gemini-1.5-flash',
         contents: [
           {
             role: 'user',
@@ -59,7 +59,7 @@ async function transcribeAudio(audioBuffer, mimeType) {
         ],
       });
 
-      const transcription = result.response.text()?.trim();
+      const transcription = result.text?.trim();
       console.log('[STT] Gemini response (attempt', attempt + 1, '):', transcription);
 
       if (!transcription) throw new Error('NO_SPEECH_DETECTED');
