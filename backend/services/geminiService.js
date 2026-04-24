@@ -23,12 +23,12 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function getAIResponse(prompt, snippet) {
   const client = getGeminiClient();
 
-  // ── Model: gemini-1.5-flash-latest (stable, multimodal, free-tier) ──────
-  const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  // ── Model: gemini-1.5-flash-002 (versioned, stable, v1 API) ─────────────
+  const model = client.getGenerativeModel({ model: 'gemini-1.5-flash-002' });
 
   // ── Backend logs ────────────────────────────────────────────────────────
   console.log('[Gemini API] Request snippet:', snippet || '(no snippet)');
-  console.log('[Gemini API] Model: gemini-1.5-flash | Time:', new Date().toISOString());
+  console.log('[Gemini API] Model: gemini-1.5-flash-002 | Time:', new Date().toISOString());
 
   const MAX_RETRIES = 3;       // up to 3 retries (4 total attempts)
   const BASE_DELAY  = 1000;    // ms — 1s, 2s, 3s backoff

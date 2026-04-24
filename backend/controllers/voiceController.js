@@ -14,7 +14,7 @@ const _delay = (ms) => new Promise((r) => setTimeout(r, ms));
 async function transcribeAudio(audioBuffer, mimeType) {
   // ── Re-use the singleton Gemini client (no new GoogleGenerativeAI) ──────
   const client = getGeminiClient();
-  const model  = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model  = client.getGenerativeModel({ model: 'gemini-1.5-flash-002' });
 
   // ── MIME normalisation ───────────────────────────────────────────────────
   let normalizedMimeType = mimeType || 'audio/webm';
