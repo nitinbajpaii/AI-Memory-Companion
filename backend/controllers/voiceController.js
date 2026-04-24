@@ -1,6 +1,5 @@
 const axios = require('axios');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { getAIResponse } = require('../services/geminiService');
+const { getAIResponse, getGeminiClient } = require('../services/geminiService');
 const LovedOneProfile = require('../models/LovedOneProfile');
 const Memory = require('../models/Memory');
 const Chat = require('../models/Chat');
@@ -9,92 +8,130 @@ const Chat = require('../models/Chat');
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Delay helper (shared with retry loop below)
+const _delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function transcribeAudio(audioBuffer, mimeType) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY not set');
+  // ── Re-use the singleton Gemini client (no new GoogleGenerativeAI) ──────
+  const client = getGeminiClient();
+  const model  = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash-latest',
-  });
-
+  // ── MIME normalisation ───────────────────────────────────────────────────
   let normalizedMimeType = mimeType || 'audio/webm';
-
-  if (normalizedMimeType === 'audio/mp3')
-    normalizedMimeType = 'audio/mpeg';
-
-  if (normalizedMimeType === 'audio/x-wav')
-    normalizedMimeType = 'audio/wav';
-
-  if (normalizedMimeType === 'audio/m4a')
-    normalizedMimeType = 'audio/mp4';
-
-  if (normalizedMimeType === 'audio/3gpp')
-    normalizedMimeType = 'audio/mp4';
-
-  if (normalizedMimeType.includes('webm'))
-    normalizedMimeType = 'audio/webm';
+  if (normalizedMimeType === 'audio/mp3')   normalizedMimeType = 'audio/mpeg';
+  if (normalizedMimeType === 'audio/x-wav') normalizedMimeType = 'audio/wav';
+  if (normalizedMimeType === 'audio/m4a')   normalizedMimeType = 'audio/mp4';
+  if (normalizedMimeType === 'audio/3gpp')  normalizedMimeType = 'audio/mp4';
+  if (normalizedMimeType.includes('webm'))  normalizedMimeType = 'audio/webm';
 
   if (!audioBuffer || audioBuffer.length === 0) {
     throw new Error('EMPTY_AUDIO_BUFFER');
   }
 
   console.log('[STT] buffer length:', audioBuffer.length);
+  console.log('[STT] mimeType resolved to:', normalizedMimeType);
 
   const audioBase64 = audioBuffer.toString('base64');
 
-  try {
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType: normalizedMimeType,
-          data: audioBase64,
-        },
-      },
-      {
-        text: 'Transcribe this audio exactly and return only the spoken text.',
-      },
-    ]);
+  // ── Retry config (mirrors getAIResponse) ────────────────────────────────
+  const MAX_RETRIES = 3;
+  const BASE_DELAY  = 1000;
 
-    const transcription = result.response.text()?.trim();
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // ── CORRECT multimodal format: { contents: [...] } object ──────────
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: normalizedMimeType,
+                  data: audioBase64,
+                },
+              },
+              {
+                text: 'Transcribe this audio exactly and return only the spoken text.',
+              },
+            ],
+          },
+        ],
+      });
 
-    console.log('[STT] Gemini response:', transcription);
+      const transcription = result.response.text()?.trim();
+      console.log('[STT] Gemini response (attempt', attempt + 1, '):', transcription);
 
-    if (!transcription) {
-      throw new Error('NO_SPEECH_DETECTED');
+      if (!transcription) throw new Error('NO_SPEECH_DETECTED');
+
+      return transcription;
+
+    } catch (err) {
+      const msg    = (err.message || '').toLowerCase();
+      const status = err.status || err.httpErrorCode ||
+                     (err.response ? err.response.status : null);
+
+      // ── Pass-through errors — do not retry ───────────────────────────
+      if (err.message === 'NO_SPEECH_DETECTED')  throw err;
+      if (msg.includes('safety') || msg.includes('blocked')) {
+        throw new Error('SAFETY_BLOCKED');
+      }
+
+      console.error('[STT] Gemini error (attempt', attempt + 1, '):', err.response?.data || err.message);
+
+      // ── Retryable: 429 quota or 503 overloaded ───────────────────────
+      const isQuota =
+        status === 429 ||
+        msg.includes('quota') || msg.includes('rate limit') ||
+        msg.includes('rate_limit') || msg.includes('resource_exhausted') ||
+        msg.includes('exhausted') || msg.includes('too many requests') ||
+        msg.includes('requests per minute') || msg.includes('requests per day') ||
+        msg.includes('daily limit') || msg.includes('rpm') || msg.includes('rpd') ||
+        (msg.includes('token') && msg.includes('limit'));
+
+      const isOverloaded =
+        status === 503 ||
+        msg.includes('overloaded') || msg.includes('service unavailable') ||
+        msg.includes('unavailable');
+
+      if ((isQuota || isOverloaded) && attempt < MAX_RETRIES) {
+        const wait = BASE_DELAY * (attempt + 1);
+        console.warn(`[STT] ${isQuota ? '429 Quota' : '503 Overloaded'} — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`);
+        await _delay(wait);
+        continue;
+      }
+
+      if (isQuota || isOverloaded) throw new Error('QUOTA_EXCEEDED');
+
+      // ── Network / server errors — retry ─────────────────────────────
+      const isNetwork =
+        (status >= 500 && status !== 503) ||
+        msg.includes('timeout') || msg.includes('network') ||
+        msg.includes('econnreset') || msg.includes('socket') ||
+        msg.includes('fetch failed');
+
+      if (isNetwork && attempt < MAX_RETRIES) {
+        const wait = BASE_DELAY * (attempt + 1);
+        console.warn(`[STT] Network error — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`);
+        await _delay(wait);
+        continue;
+      }
+
+      // ── 404 / model not found ────────────────────────────────────────
+      if (
+        msg.includes('404') || msg.includes('not found') ||
+        (msg.includes('model') && (msg.includes('invalid') || msg.includes('not found')))
+      ) {
+        throw new Error('MODEL_NOT_FOUND');
+      }
+
+      // ── Catch-all ────────────────────────────────────────────────────
+      throw new Error('TRANSCRIPTION_SERVICE_ERROR');
     }
-
-    return transcription;
-  } catch (err) {
-    console.error(
-      '[STT] Gemini transcription error:',
-      err.response?.data || err.message
-    );
-
-    const msg = err.message || '';
-
-    if (msg.includes('safety') || msg.includes('blocked')) {
-      throw new Error('SAFETY_BLOCKED');
-    }
-
-    if (msg === 'NO_SPEECH_DETECTED') {
-      throw err;
-    }
-
-    if (msg.includes('quota') || msg.includes('429')) {
-      throw new Error('QUOTA_EXCEEDED');
-    }
-
-    if (
-      msg.includes('404') ||
-      msg.includes('model') ||
-      msg.includes('not found')
-    ) {
-      throw new Error('MODEL_NOT_FOUND');
-    }
-
-    throw new Error('TRANSCRIPTION_SERVICE_ERROR');
   }
+
+  // Safety net — should never reach here
+  throw new Error('TRANSCRIPTION_SERVICE_ERROR');
 }
 
 async function generateElevenLabsAudio(text, voiceType = 'female') {
