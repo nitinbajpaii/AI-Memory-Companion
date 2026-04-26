@@ -39,8 +39,10 @@ async function transcribeAudio(audioBuffer, mimeType) {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       // ── New SDK: ai.models.generateContent with multimodal contents format ──
+      // FIX: gemini-1.5-flash is unavailable on v1beta (@google/genai v1.x).
+      // gemini-2.0-flash supports multimodal audio input and is available on this SDK version.
       const result = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash',
         contents: [
           {
             role: 'user',

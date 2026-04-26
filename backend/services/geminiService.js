@@ -32,8 +32,8 @@ async function getAIResponse(prompt, snippet) {
 
   // ── Backend logs ────────────────────────────────────────────────────────
   console.log('[Gemini API] Request snippet:', snippet || '(no snippet)');
-  console.log('[Gemini] Using model: gemini-1.5-flash');
-  console.log('[Gemini API] Model: gemini-1.5-flash | Time:', new Date().toISOString());
+  console.log('[Gemini] Using model: gemini-2.0-flash');
+  console.log('[Gemini API] Model: gemini-2.0-flash | Time:', new Date().toISOString());
 
   const MAX_RETRIES  = 3;     // up to 3 retries (4 total attempts)
   const BASE_DELAY   = 1000;  // ms — 1s, 2s, 3s backoff
@@ -42,8 +42,10 @@ async function getAIResponse(prompt, snippet) {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       // ── New SDK: ai.models.generateContent ──────────────────────────────
+      // FIX: gemini-1.5-flash is unavailable on v1beta (used by @google/genai v1.x).
+      // gemini-2.0-flash is the correct stable model for this SDK version.
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash',
         contents: prompt,
       });
 
