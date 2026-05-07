@@ -1,7 +1,7 @@
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const AI_CONFIG = {
-  model: 'gemini-2.0-flash', // Updated to 2.0-flash which is stable on v1beta
+  model: 'gemini-1.5-flash', // Switching back to 1.5-flash as it's the most compatible with stable SDK
   generationConfig: {
     maxOutputTokens: 180,
     temperature: 0.7,
@@ -14,7 +14,7 @@ const getGeminiClient = () => {
   if (_ai) return _ai;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY_MISSING');
-  _ai = new GoogleGenAI({ apiKey });
+  _ai = new GoogleGenerativeAI(apiKey); // Correct constructor for @google/generative-ai
   return _ai;
 };
 
@@ -28,19 +28,23 @@ async function getAIResponse(prompt, snippet) {
   const MAX_RETRIES = 2;
   const BASE_DELAY = 2000;
 
+  // New Multimodal SDK syntax: model must be initialized via getGenerativeModel
+  const model = ai.getGenerativeModel({
+    model: AI_CONFIG.model,
+    generationConfig: AI_CONFIG.generationConfig,
+  });
+
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       console.log(`[Gemini] Request: ${snippet || '...'}`);
       
-      const response = await ai.models.generateContent({
-        model: AI_CONFIG.model,
-        contents: prompt,
-        generationConfig: AI_CONFIG.generationConfig,
-      });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
 
-      if (!response?.text) throw new Error('EMPTY_RESPONSE');
+      if (!text) throw new Error('EMPTY_RESPONSE');
 
-      return { success: true, text: response.text.trim() };
+      return { success: true, text: text.trim() };
 
     } catch (error) {
       const status = error.status || error.httpErrorCode || error.response?.status;

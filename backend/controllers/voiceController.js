@@ -12,8 +12,8 @@ const Chat = require('../models/Chat');
 const _delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function transcribeAudio(audioBuffer, mimeType) {
-  // ── Re-use the singleton @google/genai client ────────────────────────────────
   const ai = getGeminiClient();
+  const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
   // ── MIME normalisation ───────────────────────────────────────────────────
   let normalizedMimeType = mimeType || 'audio/webm';
@@ -27,42 +27,28 @@ async function transcribeAudio(audioBuffer, mimeType) {
     throw new Error('EMPTY_AUDIO_BUFFER');
   }
 
-  console.log('[STT] buffer length:', audioBuffer.length);
-  console.log('[STT] mimeType resolved to:', normalizedMimeType);
-
   const audioBase64 = audioBuffer.toString('base64');
 
   // ── Retry config (mirrors getAIResponse) ────────────────────────────────
-  const MAX_RETRIES = 3;
-  const BASE_DELAY  = 1000;
+  const MAX_RETRIES = 2;
+  const BASE_DELAY  = 2000;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      // ── New SDK: ai.models.generateContent with multimodal contents format ──
-      // FIX: gemini-1.5-flash is unavailable on v1beta (@google/genai v1.x).
-      // gemini-2.0-flash supports multimodal audio input and is available on this SDK version.
-      const result = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                inlineData: {
-                  mimeType: normalizedMimeType,
-                  data: audioBase64,
-                },
-              },
-              {
-                text: 'Transcribe this audio exactly and return only the spoken text.',
-              },
-            ],
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: normalizedMimeType,
+            data: audioBase64,
           },
-        ],
-      });
+        },
+        { text: 'Transcribe this audio exactly and return only the spoken text.' },
+      ]);
 
-      const transcription = result.text?.trim();
-      console.log('[STT] Gemini response (attempt', attempt + 1, '):', transcription);
+      const response = await result.response;
+      const transcription = response.text()?.trim();
+      
+      console.log('[STT] Success on attempt', attempt + 1);
 
       if (!transcription) throw new Error('NO_SPEECH_DETECTED');
 
