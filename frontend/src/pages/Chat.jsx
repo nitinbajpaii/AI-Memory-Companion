@@ -77,6 +77,7 @@ const Chat = () => {
   const textareaRef = useRef(null);
   const isInFlight  = useRef(false);
   const lastSentAt  = useRef(0);
+  const abortControllerRef = useRef(null);
 
   const user = JSON.parse(localStorage.getItem('user'));
 
@@ -115,60 +116,57 @@ const Chat = () => {
     }
   }, [messages, loading]);
 
-  // ── Text send handler ───────────────────────────────────────────────────
+  // ── Optimized Text send handler ───────────────────────────────────────────
   const handleSend = useCallback(async (e, retryText = null) => {
     if (e) e.preventDefault();
     const text = retryText ?? input.trim();
-    if (!text) return;
-    if (isInFlight.current) return;
+    if (!text || loading || isInFlight.current) return;
 
     const now = Date.now();
-    // Allow retries even if within debounce time
     if (!retryText && now - lastSentAt.current < DEBOUNCE_MS) return;
+
+    // ── Request Cancellation Setup ──────────────────────────────────────────
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
 
     isInFlight.current = true;
     lastSentAt.current = now;
-
-    // Clear previous error when sending a new message or retrying
     setErrorInfo(null);
 
-    // Only append user message if it's NOT a retry
+    // ── OPTIMISTIC UI: Add user message instantly ──────────────────────────
     if (!retryText) {
-      setMessages(prev => [...prev, { role: 'user', content: text, createdAt: new Date() }]);
+      const newUserMsg = { role: 'user', content: text, createdAt: new Date() };
+      setMessages(prev => [...prev, newUserMsg]);
       setInput('');
     }
 
     setLoading(true);
 
     try {
-      const { data } = await chatAPI.sendMessage(text);
+      const { data } = await chatAPI.sendMessage(text, { signal: abortControllerRef.current.signal });
       
       if (data.success) {
-        // Prevent duplicate assistant messages by checking if the last message is the same
         setMessages(prev => {
-          const lastMsg = prev[prev.length - 1];
-          if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content === data.message) {
-            return prev;
-          }
+          // Double-check for duplicate assistant messages in state
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && last?.content === data.message) return prev;
           return [...prev, { role: 'assistant', content: data.message, createdAt: new Date() }];
-        });
-      } else {
-        // All backend retries failed
-        setErrorInfo({ 
-          errorType: data.errorType || 'UNKNOWN_ERROR', 
-          message: data.message || 'Server busy hai, thodi der baad try karo.' 
         });
       }
     } catch (err) {
-      console.error('[Chat] Send error:', err);
-      const errorType = err.response?.data?.errorType || 'UNKNOWN_ERROR';
-      const message = err.response?.data?.message || 'Server busy hai, thodi der baad try karo.';
-      setErrorInfo({ errorType, message });
+      if (err.name === 'CanceledError') return; // Ignore intentional cancellations
+      
+      console.error('[Chat] Error:', err);
+      const errorData = err.response?.data;
+      setErrorInfo({
+        errorType: errorData?.errorType || 'NETWORK_ERROR',
+        message: errorData?.message || 'Connection weak hai. Please try again.'
+      });
     } finally {
       setLoading(false);
       isInFlight.current = false;
     }
-  }, [input]);
+  }, [input, loading]);
 
   // ── Retry ───────────────────────────────────────────────────────────────
   const handleRetry = useCallback(() => {

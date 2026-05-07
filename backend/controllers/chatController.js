@@ -2,50 +2,31 @@ const { getAIResponse } = require('../services/geminiService');
 const LovedOneProfile = require('../models/LovedOneProfile');
 const Memory = require('../models/Memory');
 const Chat = require('../models/Chat');
+const { buildOptimizedPrompt } = require('../utils/aiHelpers');
 
+/**
+ * Optimized Chat Handler (Gemini Flash + Context Trimming)
+ */
 const getChatResponse = async (req, res) => {
   const { message } = req.body;
   const userId = req.user._id;
 
   try {
-    // ── Optimized Context Retrieval ──────────────────────────────────────────
-    // Fetch profile and memories in parallel
-    // OPTIMIZATION: Only top 2 memories (simulated semantic retrieval by sorting)
+    // ── 1. Optimized Data Retrieval (Parallel) ──────────────────────────────
     const [profile, memories, history] = await Promise.all([
-      LovedOneProfile.findOne({ userId }),
-      Memory.find({ userId }).sort({ createdAt: -1 }).limit(2),
-      Chat.find({ userId }).sort({ createdAt: -1 }).limit(6) // Only last 6 messages
+      LovedOneProfile.findOne({ userId }).lean(),
+      Memory.find({ userId }).sort({ createdAt: -1 }).limit(2).lean(), // Top 2 memories
+      Chat.find({ userId }).sort({ createdAt: -1 }).limit(6).lean()   // Last 6 messages
     ]);
 
-    // Reverse history to keep chronological order for Gemini
-    const recentHistory = history.reverse();
+    // ── 2. Build Optimized Prompt ───────────────────────────────────────────
+    const prompt = buildOptimizedPrompt(profile, memories, history.reverse(), message);
 
-    const memoryContext = memories.length
-      ? memories.map(m => `- ${m.memoryText} (${m.emotionTag})`).join('\n')
-      : 'No specific memories yet.';
-
-    const historyContext = recentHistory.length
-      ? recentHistory.map(c => `${c.role === 'user' ? 'User' : 'Assistant'}: ${c.content}`).join('\n')
-      : '';
-
-    // ── Optimized Prompt ─────────────────────────────────────────────────────
-    const prompt = profile
-      ? `You are an emotionally intelligent AI companion inspired by ${profile.name} (${profile.relation}).
-PERSONA: ${profile.personality}. Habits: ${profile.habits}.
-MEMORIES:
-${memoryContext}
-CONTEXT:
-${historyContext}
-User: ${message}
-RULES: Reply in warm Hinglish. Concise (<60 words). Validate emotions.`
-      : `You are a warm grief support AI. Concise (<60 words). Hinglish. User: ${message}`;
-
-    // Save user message
+    // ── 3. Optimistic Save (Save User Message First) ───────────────────────
     await Chat.create({ userId, role: 'user', content: message });
 
-    // Get AI response
-    const snippet = message ? message.slice(0, 50) : '';
-    const aiResponse = await getAIResponse(prompt, snippet);
+    // ── 4. AI Request ───────────────────────────────────────────────────────
+    const aiResponse = await getAIResponse(prompt, message.slice(0, 50));
 
     if (!aiResponse.success) {
       return res.status(aiResponse.errorType === 'QUOTA_EXCEEDED' ? 429 : 503).json({
@@ -55,16 +36,15 @@ RULES: Reply in warm Hinglish. Concise (<60 words). Validate emotions.`
       });
     }
 
+    // ── 5. Save & Respond ───────────────────────────────────────────────────
     const aiMessage = aiResponse.text;
-
-    // Save AI response
     await Chat.create({ userId, role: 'assistant', content: aiMessage });
 
-    res.json({ success: true, message: aiMessage });
+    return res.json({ success: true, message: aiMessage });
 
   } catch (error) {
-    console.error('[Chat Controller Error]:', error?.message);
-    res.status(500).json({ success: false, message: 'Server error, try again.' });
+    console.error('[Chat Controller] Fatal Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error. Try again.' });
   }
 };
 

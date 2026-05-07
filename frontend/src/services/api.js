@@ -30,7 +30,7 @@ export const authAPI = {
 };
 
 export const chatAPI = {
-  sendMessage: (message) => API.post('/chat', { message }),
+  sendMessage: (message, options = {}) => API.post('/chat', { message }, options),
   getHistory: (userId) => API.get(`/chat/history/${userId}`),
 };
 
