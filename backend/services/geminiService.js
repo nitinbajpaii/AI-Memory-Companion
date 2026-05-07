@@ -30,92 +30,56 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function getAIResponse(prompt, snippet) {
   const ai = getGeminiClient();
 
-  // ── Backend logs ────────────────────────────────────────────────────────
   console.log('[Gemini API] Request snippet:', snippet || '(no snippet)');
-  console.log('[Gemini] Using model: gemini-2.0-flash');
   console.log('[Gemini API] Model: gemini-2.0-flash | Time:', new Date().toISOString());
 
-  const MAX_RETRIES  = 3;     // up to 3 retries (4 total attempts)
-  const BASE_DELAY   = 1000;  // ms — 1s, 2s, 3s backoff
-  const FALLBACK_TEXT = 'Main yahin hoon 💜 thoda system slow hai, par main tumhare saath hoon.';
+  const MAX_RETRIES = 3; 
+  const BASE_DELAY = 1500; // Start with 1.5s
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      // ── New SDK: ai.models.generateContent ──────────────────────────────
-      // FIX: gemini-1.5-flash is unavailable on v1beta (used by @google/genai v1.x).
-      // gemini-2.0-flash is the correct stable model for this SDK version.
       const response = await ai.models.generateContent({
         model: 'gemini-2.0-flash',
         contents: prompt,
       });
 
-      const text = response.text;
+      if (!response || !response.text) {
+        throw new Error('Empty response from Gemini');
+      }
 
-      console.log('[Gemini API] Success on attempt', attempt + 1);
-      return { success: true, text };
+      console.log(`[Gemini API] Success on attempt ${attempt + 1}`);
+      return { success: true, text: response.text };
 
     } catch (error) {
-      console.error('[Gemini API] Error on attempt', attempt + 1, ':', error.message);
+      const status = error.status || error.httpErrorCode || (error.response ? error.response.status : null);
+      const msg = (error.message || '').toLowerCase();
+      
+      console.error(`[Gemini API] Attempt ${attempt + 1} failed:`, msg);
 
-      const msg    = (error.message || '').toLowerCase();
-      const status = error.status || error.httpErrorCode ||
-                     (error.response ? error.response.status : null);
+      const isQuota = status === 429 || msg.includes('quota') || msg.includes('rate limit') || msg.includes('resource_exhausted');
+      const isOverloaded = status === 503 || msg.includes('overloaded') || msg.includes('unavailable');
+      const isNetwork = msg.includes('timeout') || msg.includes('network') || msg.includes('econnreset') || msg.includes('fetch failed');
 
-      // ── 1. Retryable: 429 quota AND 503 overloaded ────────────────────
-      const isQuota =
-        status === 429 ||
-        msg.includes('quota') || msg.includes('rate limit') ||
-        msg.includes('rate_limit') || msg.includes('resource_exhausted') ||
-        msg.includes('exhausted') || msg.includes('too many requests') ||
-        msg.includes('requests per minute') || msg.includes('requests per day') ||
-        msg.includes('daily limit') || msg.includes('rpm') || msg.includes('rpd') ||
-        (msg.includes('token') && msg.includes('limit'));
-
-      const isOverloaded =
-        status === 503 ||
-        msg.includes('overloaded') || msg.includes('service unavailable') ||
-        msg.includes('unavailable');
-
-      if ((isQuota || isOverloaded) && attempt < MAX_RETRIES) {
+      if ((isQuota || isOverloaded || isNetwork) && attempt < MAX_RETRIES) {
+        // Exponential backoff: 1.5s, 3s, 4.5s...
         const wait = BASE_DELAY * (attempt + 1);
-        console.warn(
-          `[Gemini API] ${isQuota ? '429 Quota' : '503 Overloaded'} — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`
-        );
+        console.warn(`[Gemini API] Retrying in ${wait}ms... (Attempt ${attempt + 1}/${MAX_RETRIES})`);
         await delay(wait);
         continue;
       }
 
-      // Final attempt still quota/overloaded → fallback
-      if (isQuota || isOverloaded) {
-        console.error(`[Gemini API] Final failure after ${MAX_RETRIES} retries — using fallback. Reason: ${msg}`);
-        return { success: true, text: FALLBACK_TEXT, usedFallback: true };
-      }
-
-      // ── 2. Temporary network / server errors → retry ──────────────────
-      const isNetwork =
-        (status >= 500 && status !== 503) ||
-        msg.includes('timeout') || msg.includes('network') ||
-        msg.includes('econnreset') || msg.includes('socket') ||
-        msg.includes('fetch failed') || msg.includes('cold start') ||
-        msg.includes('internet');
-
-      if (isNetwork && attempt < MAX_RETRIES) {
-        const wait = BASE_DELAY * (attempt + 1);
-        console.log(`[Gemini API] Network error — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`);
-        await delay(wait);
-        continue;
-      }
-
-      // ── 3. Final / unrecognized → fallback, never throw ──────────────
-      console.error(
-        `[Gemini API] Final unrecoverable error after ${attempt + 1} attempt(s) — using fallback. Reason: ${msg}`
-      );
-      return { success: true, text: FALLBACK_TEXT, usedFallback: true };
+      // If we're here, it's either not retryable or we've exhausted retries
+      const errorType = isQuota ? 'QUOTA_EXCEEDED' : (isOverloaded || isNetwork ? 'TEMPORARY_FAILURE' : 'GENERIC_ERROR');
+      
+      return { 
+        success: false, 
+        errorType, 
+        message: isQuota ? 'Daily limit reached.' : 'AI service is busy.' 
+      };
     }
   }
 
-  // Safety net — should never reach here
-  return { success: true, text: FALLBACK_TEXT, usedFallback: true };
+  return { success: false, errorType: 'TEMPORARY_FAILURE', message: 'Maximum retries exceeded.' };
 }
 
 module.exports = { getAIResponse, getGeminiClient };

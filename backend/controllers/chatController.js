@@ -67,20 +67,20 @@ User message: ${message}
 
     if (!aiResponse.success) {
       console.warn(`[Chat Controller] Gemini failed — errorType: ${aiResponse.errorType} | msg: ${aiResponse.message}`);
+      
       // Use 429 for quota errors, 503 for temporary failures, 500 for others
-      const httpStatus =
-        aiResponse.errorType === 'QUOTA_EXCEEDED'    ? 429 :
-        aiResponse.errorType === 'TEMPORARY_FAILURE' ? 503 : 500;
+      const httpStatus = aiResponse.errorType === 'QUOTA_EXCEEDED' ? 429 : 503;
+      
       return res.status(httpStatus).json({
         success: false,
         errorType: aiResponse.errorType || 'UNKNOWN_ERROR',
-        message: aiResponse.message || 'AI service error. Please try again.',
+        message: aiResponse.message || 'Server busy hai, thodi der baad try karo.'
       });
     }
 
     const aiMessage = aiResponse.text;
 
-    // Save AI response
+    // Save AI response ONLY if it's a real success
     await Chat.create({ userId: req.user._id, role: 'assistant', content: aiMessage });
 
     res.json({ success: true, message: aiMessage });

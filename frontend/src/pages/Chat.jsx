@@ -123,29 +123,46 @@ const Chat = () => {
     if (isInFlight.current) return;
 
     const now = Date.now();
+    // Allow retries even if within debounce time
     if (!retryText && now - lastSentAt.current < DEBOUNCE_MS) return;
 
     isInFlight.current = true;
     lastSentAt.current = now;
 
+    // Clear previous error when sending a new message or retrying
+    setErrorInfo(null);
+
+    // Only append user message if it's NOT a retry
     if (!retryText) {
       setMessages(prev => [...prev, { role: 'user', content: text, createdAt: new Date() }]);
       setInput('');
     }
 
     setLoading(true);
-    setErrorInfo(null);
 
     try {
       const { data } = await chatAPI.sendMessage(text);
+      
       if (data.success) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.message, createdAt: new Date() }]);
+        // Prevent duplicate assistant messages by checking if the last message is the same
+        setMessages(prev => {
+          const lastMsg = prev[prev.length - 1];
+          if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content === data.message) {
+            return prev;
+          }
+          return [...prev, { role: 'assistant', content: data.message, createdAt: new Date() }];
+        });
       } else {
-        setErrorInfo({ errorType: data.errorType || 'UNKNOWN_ERROR', message: data.message });
+        // All backend retries failed
+        setErrorInfo({ 
+          errorType: data.errorType || 'UNKNOWN_ERROR', 
+          message: data.message || 'Server busy hai, thodi der baad try karo.' 
+        });
       }
     } catch (err) {
+      console.error('[Chat] Send error:', err);
       const errorType = err.response?.data?.errorType || 'UNKNOWN_ERROR';
-      const message   = err.response?.data?.message   || err.message || 'Something went wrong.';
+      const message = err.response?.data?.message || 'Server busy hai, thodi der baad try karo.';
       setErrorInfo({ errorType, message });
     } finally {
       setLoading(false);
