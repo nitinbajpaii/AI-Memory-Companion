@@ -199,15 +199,14 @@ const Chat = () => {
       },
     ]);
 
-    // Add AI reply bubble (with audio if available)
+    // Add AI reply bubble (TEXT ONLY by default)
     setMessages(prev => [
       ...prev,
       {
         role:      'assistant',
         content:   result.text,
         createdAt: new Date(),
-        isVoice:   true,
-        audio:     result.audio || null, // base64 MP3
+        isVoiceNote: true, // Mark as voice-on-demand
       },
     ]);
   }, []);
@@ -321,12 +320,13 @@ const Chat = () => {
           <AnimatePresence initial={false}>
             {messages.map((msg, i) => {
               // Voice message with audio — use VoiceBubble
-              if (msg.isVoice && msg.role === 'assistant' && msg.audio) {
+              if (msg.role === 'assistant' && (msg.isVoice || msg.isVoiceNote)) {
                 return (
                   <VoiceBubble
                     key={i}
                     audioBase64={msg.audio}
                     text={msg.content}
+                    voiceType={voiceType}
                     isAI
                   />
                 );

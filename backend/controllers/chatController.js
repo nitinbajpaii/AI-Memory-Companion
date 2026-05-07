@@ -5,93 +5,66 @@ const Chat = require('../models/Chat');
 
 const getChatResponse = async (req, res) => {
   const { message } = req.body;
+  const userId = req.user._id;
 
   try {
-    const profile = await LovedOneProfile.findOne({ userId: req.user._id });
-    const memories = await Memory.find({ userId: req.user._id });
+    // ── Optimized Context Retrieval ──────────────────────────────────────────
+    // Fetch profile and memories in parallel
+    // OPTIMIZATION: Only top 2 memories (simulated semantic retrieval by sorting)
+    const [profile, memories, history] = await Promise.all([
+      LovedOneProfile.findOne({ userId }),
+      Memory.find({ userId }).sort({ createdAt: -1 }).limit(2),
+      Chat.find({ userId }).sort({ createdAt: -1 }).limit(6) // Only last 6 messages
+    ]);
 
-    // Build memory context
+    // Reverse history to keep chronological order for Gemini
+    const recentHistory = history.reverse();
+
     const memoryContext = memories.length
       ? memories.map(m => `- ${m.memoryText} (${m.emotionTag})`).join('\n')
-      : 'No memories added yet.';
+      : 'No specific memories yet.';
 
-    // Build the full prompt
+    const historyContext = recentHistory.length
+      ? recentHistory.map(c => `${c.role === 'user' ? 'User' : 'Assistant'}: ${c.content}`).join('\n')
+      : '';
+
+    // ── Optimized Prompt ─────────────────────────────────────────────────────
     const prompt = profile
-      ? `
-You are an emotionally intelligent AI companion inspired by the memories of ${profile.name}, who was the user's ${profile.relation}.
-
-CRITICAL RULES:
-- You are NOT ${profile.name}. You are an AI inspired by their life — never impersonate them.
-- Your goal: comfort, grief support, memory healing.
-
-PERSONA:
-- Name: ${profile.name}
-- Personality: ${profile.personality}
-- Habits: ${profile.habits}
-- Common Phrases: ${profile.commonPhrases}
-
+      ? `You are an emotionally intelligent AI companion inspired by ${profile.name} (${profile.relation}).
+PERSONA: ${profile.personality}. Habits: ${profile.habits}.
 MEMORIES:
 ${memoryContext}
-
-TONE:
-- Warm, empathetic, calm — like a close friend.
-- Speak in natural Hinglish (Hindi + English mix).
-- Encourage real-world connections; avoid unhealthy dependency.
-
-EMOTIONAL GUIDANCE:
-- SAD user → validate feelings gently, share a comforting memory.
-- LONELY user → be present, encourage reaching out to others.
-- NORMAL user → reminisce warmly, offer gentle support.
-
-User message: ${message}
-`
-      : `
-You are a warm, emotionally intelligent grief support companion called "AI Memory Companion".
-The user hasn't created a loved one profile yet.
-
-GUIDELINES:
-- Be kind, gentle, and supportive.
-- Gently invite them to go to the "Loved One" section to add a profile for a more personal experience.
-- Speak warmly in English or Hinglish.
-- Never pretend to be a real person.
-
-User message: ${message}
-`;
+CONTEXT:
+${historyContext}
+User: ${message}
+RULES: Reply in warm Hinglish. Concise (<60 words). Validate emotions.`
+      : `You are a warm grief support AI. Concise (<60 words). Hinglish. User: ${message}`;
 
     // Save user message
-    await Chat.create({ userId: req.user._id, role: 'user', content: message });
+    await Chat.create({ userId, role: 'user', content: message });
 
-    // Get AI response from Gemini — pass snippet for duplicate-call logging
-    const snippet = message ? message.slice(0, 80) : '';
+    // Get AI response
+    const snippet = message ? message.slice(0, 50) : '';
     const aiResponse = await getAIResponse(prompt, snippet);
 
     if (!aiResponse.success) {
-      console.warn(`[Chat Controller] Gemini failed — errorType: ${aiResponse.errorType} | msg: ${aiResponse.message}`);
-      
-      // Use 429 for quota errors, 503 for temporary failures, 500 for others
-      const httpStatus = aiResponse.errorType === 'QUOTA_EXCEEDED' ? 429 : 503;
-      
-      return res.status(httpStatus).json({
+      return res.status(aiResponse.errorType === 'QUOTA_EXCEEDED' ? 429 : 503).json({
         success: false,
-        errorType: aiResponse.errorType || 'UNKNOWN_ERROR',
-        message: aiResponse.message || 'Server busy hai, thodi der baad try karo.'
+        errorType: aiResponse.errorType,
+        message: aiResponse.message
       });
     }
 
     const aiMessage = aiResponse.text;
 
-    // Save AI response ONLY if it's a real success
-    await Chat.create({ userId: req.user._id, role: 'assistant', content: aiMessage });
+    // Save AI response
+    await Chat.create({ userId, role: 'assistant', content: aiMessage });
 
     res.json({ success: true, message: aiMessage });
 
   } catch (error) {
-    console.error('Chat error:', error?.message || error);
-    res.status(500).json({ 
-      success: false, 
-      errorType: 'SERVER_ERROR',
-      message: error?.message || 'Error communicating with AI' 
-    });
+    console.error('[Chat Controller Error]:', error?.message);
+    res.status(500).json({ success: false, message: 'Server error, try again.' });
   }
 };
 

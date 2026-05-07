@@ -136,134 +136,52 @@ async function transcribeAudio(audioBuffer, mimeType) {
   throw new Error('TRANSCRIPTION_SERVICE_ERROR');
 }
 
+/**
+ * Call ElevenLabs Text-to-Speech API (Optimized).
+ */
 async function generateElevenLabsAudio(text, voiceType = 'female') {
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  const configuredVoiceId =
-    voiceType === 'male'
+  let voiceId = voiceType === 'male'
       ? process.env.ELEVENLABS_VOICE_ID_MALE
       : process.env.ELEVENLABS_VOICE_ID_FEMALE;
 
-  // ── Debug: log key presence (never log the full key) ─────────────────────
-  console.log(`[ElevenLabs] API key present: ${apiKey ? 'YES (length ' + apiKey.length + ')' : 'NO'}`);
-  console.log(`[ElevenLabs] voiceType: ${voiceType} | configuredVoiceId: ${configuredVoiceId || '(not set)'}`);
+  if (!apiKey) throw new Error('INVALID_API_KEY');
 
-  if (!apiKey) {
-    console.error('[ElevenLabs] ELEVENLABS_API_KEY is not set in environment variables.');
-    throw new Error('INVALID_API_KEY');
-  }
-
-  const DEFAULT_VOICE = '21m00Tcm4TlvDq8ikWAM';
-  const trimmedText = text.slice(0, 2500);
-
-  const authHeaders = {
-    'xi-api-key': apiKey,
+  const headers = {
     'Content-Type': 'application/json',
     Accept: 'audio/mpeg',
   };
 
-  // ── Step 1: Pre-flight — validate API key & resolve voiceId ──────────────
-  let resolvedVoiceId = configuredVoiceId || DEFAULT_VOICE;
-
-  try {
-    const voicesRes = await axios.get('https://api.elevenlabs.io/v1/voices', {
-      headers: { 'xi-api-key': apiKey },
-      timeout: 10000,
-    });
-
-    const voices = voicesRes.data?.voices || [];
-    console.log(`[ElevenLabs] Voices fetched: ${voices.length}`);
-
-    const voiceIds = voices.map((v) => v.voice_id);
-
-    if (configuredVoiceId && voiceIds.includes(configuredVoiceId)) {
-      resolvedVoiceId = configuredVoiceId;
-      console.log(`[ElevenLabs] voiceId "${configuredVoiceId}" confirmed in account.`);
-    } else if (configuredVoiceId) {
-      console.warn(`[ElevenLabs] voiceId "${configuredVoiceId}" NOT found in account. Falling back to default "${DEFAULT_VOICE}".`);
-      resolvedVoiceId = DEFAULT_VOICE;
-    } else {
-      console.log(`[ElevenLabs] No configuredVoiceId set. Using default "${DEFAULT_VOICE}".`);
-      resolvedVoiceId = DEFAULT_VOICE;
-    }
-  } catch (prefErr) {
-    const prefStatus = prefErr.response?.status;
-
-    if (prefStatus === 401) {
-      console.error('[ElevenLabs] Pre-flight 401 — API key is invalid or expired.');
-      throw new Error('INVALID_API_KEY');
-    }
-
-    if (prefStatus === 429) {
-      console.error('[ElevenLabs] Pre-flight 429 — quota exceeded.');
-      throw new Error('QUOTA_EXCEEDED');
-    }
-
-    // Network / timeout — proceed with configured or default voice
-    console.warn(`[ElevenLabs] Pre-flight voices fetch failed (${prefStatus ?? 'Network Error'}): ${prefErr.message}. Proceeding with voiceId "${resolvedVoiceId}".`);
+  if (apiKey.startsWith('sk_')) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  } else {
+    headers['xi-api-key'] = apiKey;
   }
 
-  // ── Step 2: TTS request with fallback chain ───────────────────────────────
-  const voicesToTry = [...new Set([resolvedVoiceId, DEFAULT_VOICE])].filter(Boolean);
-  console.log(`[ElevenLabs] Selected voiceId: "${resolvedVoiceId}" | chain: ${voicesToTry.join(' → ')}`);
+  const DEFAULT_VOICE = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+  const voicesToTry = [voiceId, DEFAULT_VOICE].filter(Boolean);
 
   for (const currentVoiceId of voicesToTry) {
     try {
-      console.log(`[ElevenLabs] Attempting TTS with voiceId: "${currentVoiceId}"`);
-
       const response = await axios.post(
         `https://api.elevenlabs.io/v1/text-to-speech/${currentVoiceId}`,
         {
-          text: trimmedText,
-          model_id: 'eleven_monolingual_v1',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true,
-          },
+          text: text.slice(0, 1000), // Concise text for faster TTS
+          model_id: 'eleven_flash_v2', // Faster and cheaper
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
         },
-        { headers: authHeaders, responseType: 'arraybuffer', timeout: 30000 }
+        { headers, responseType: 'arraybuffer', timeout: 15000 }
       );
 
-      console.log(`[ElevenLabs] TTS SUCCESS — status: ${response.status}, voiceId: "${currentVoiceId}", bytes: ${response.data.byteLength}`);
       return Buffer.from(response.data);
     } catch (err) {
       const status = err.response?.status;
-      const errBody = err.response?.data ? Buffer.from(err.response.data).toString().slice(0, 200) : err.message;
-
-      console.error(`[ElevenLabs] TTS failed for voiceId "${currentVoiceId}" — status: ${status ?? 'Network Error'} | reason: ${errBody}`);
-
-      if (status === 401) {
-        console.error('[ElevenLabs] 401 during TTS — INVALID_API_KEY');
-        throw new Error('INVALID_API_KEY');
-      }
-
-      if (status === 429) {
-        console.error('[ElevenLabs] 429 during TTS — QUOTA_EXCEEDED');
-        throw new Error('QUOTA_EXCEEDED');
-      }
-
-      if (!err.response) {
-        // Pure network error
-        if (currentVoiceId === voicesToTry[voicesToTry.length - 1]) {
-          console.error('[ElevenLabs] Network error on final voice option — SERVICE_UNAVAILABLE');
-          throw new Error('SERVICE_UNAVAILABLE');
-        }
-        console.log('[ElevenLabs] Network error — trying next voice...');
-        continue;
-      }
-
-      if (currentVoiceId === DEFAULT_VOICE) {
-        console.error('[ElevenLabs] Default voice also failed — SERVICE_UNAVAILABLE');
-        throw new Error('SERVICE_UNAVAILABLE');
-      }
-
-      console.log(`[ElevenLabs] Falling back to default voice "${DEFAULT_VOICE}"...`);
+      if (status === 401) throw new Error('INVALID_API_KEY');
+      if (status === 429) throw new Error('QUOTA_EXCEEDED');
+      if (currentVoiceId !== DEFAULT_VOICE) continue;
+      throw new Error('SERVICE_UNAVAILABLE');
     }
   }
-
-  // Guard — should never reach here
-  throw new Error('SERVICE_UNAVAILABLE');
 }
 
 
@@ -308,140 +226,72 @@ User voice message: ${transcript}
 `.trim();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
-
+/**
+ * MAIN HANDLER (Optimized for TEXT-FIRST + VOICE-ON-DEMAND)
+ */
 const handleVoiceChat = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        errorType: 'NO_AUDIO',
-        message: 'No audio file received.',
-      });
+      return res.status(400).json({ success: false, message: 'No audio received.' });
     }
 
-    const voiceType = (req.body.voiceType || 'female').toLowerCase();
     const userId = req.user._id;
 
-    let transcript;
+    // ── 1. Speech → Text ────────────────────────────────────────────────────
+    const transcript = await transcribeAudio(req.file.buffer, req.file.mimetype);
+    
+    // Save user voice message
+    await Chat.create({ userId, role: 'user', content: `🎤 ${transcript}` });
 
-    try {
-      transcript = await transcribeAudio(
-        req.file.buffer,
-        req.file.mimetype
-      );
-    } catch (err) {
-      const errorMap = {
-        EMPTY_AUDIO_BUFFER:
-          'The audio file appears to be empty.',
+    // ── 2. Text → AI reply ──────────────────────────────────────────────────
+    // Reusing chat context logic from buildPrompt
+    const prompt = await buildPrompt(userId, transcript);
+    const aiResponse = await getAIResponse(prompt, transcript.slice(0, 50));
 
-        NO_SPEECH_DETECTED:
-          'No speech detected. Please speak clearly.',
-
-        SAFETY_BLOCKED:
-          'Voice content blocked by safety filters.',
-
-        QUOTA_EXCEEDED:
-          'Daily transcription limit reached.',
-
-        MODEL_NOT_FOUND:
-          'Gemini model configuration issue.',
-
-        TRANSCRIPTION_SERVICE_ERROR:
-          'AI transcription service temporarily unavailable.',
-      };
-
-      const message =
-        errorMap[err.message] ||
-        'Could not process audio. Please try again.';
-
-      return res.status(422).json({
+    if (!aiResponse.success) {
+      return res.status(aiResponse.errorType === 'QUOTA_EXCEEDED' ? 429 : 503).json({
         success: false,
-        errorType: err.message,
-        message,
+        errorType: aiResponse.errorType,
+        message: aiResponse.message
       });
     }
 
-    await Chat.create({
-      userId,
-      role: 'user',
-      content: `🎤 ${transcript}`,
-    });
+    const aiText = aiResponse.text;
+    await Chat.create({ userId, role: 'assistant', content: aiText });
 
-    const prompt = await buildPrompt(userId, transcript);
-
-    const aiResponse = await getAIResponse(
-      prompt,
-      transcript.slice(0, 80)
-    );
-
-    const FALLBACK_TEXT = 'Main yahin hoon 💜 thoda system slow hai, par main tumhare saath hoon.';
-
-    let aiText;
-
-    if (!aiResponse.success) {
-      // Gemini failed after all retries — use fallback, never send 500
-      console.warn(
-        `[Voice Controller] Gemini failed (${aiResponse.errorType || 'UNKNOWN'}) — using fallback text. Reason: ${aiResponse.message}`
-      );
-      aiText = FALLBACK_TEXT;
-    } else {
-      aiText = aiResponse.text || FALLBACK_TEXT;
-      if (aiResponse.usedFallback) {
-        console.warn('[Voice Controller] Gemini returned fallback text (service degraded).');
-      }
-    }
-
-    await Chat.create({
-      userId,
-      role: 'assistant',
-      content: aiText,
-    });
-
-    let audioBase64 = null;
-    let ttsError = null;
-
-    if (aiText) {
-      try {
-        const audioBuffer = await generateElevenLabsAudio(aiText, voiceType);
-        if (audioBuffer) audioBase64 = audioBuffer.toString('base64');
-      } catch (err) {
-        console.error(`[ElevenLabs] TTS error caught in handler — code: ${err.message}`);
-
-        if (err.message === 'INVALID_API_KEY') {
-          ttsError = 'ElevenLabs API key is invalid. AI will reply with text only.';
-        } else if (err.message === 'QUOTA_EXCEEDED') {
-          ttsError = 'ElevenLabs quota exceeded. AI will reply with text only.';
-        } else if (err.message === 'SERVICE_UNAVAILABLE') {
-          ttsError = 'AI voice service temporarily unavailable.';
-        } else {
-          ttsError = 'AI voice service encountered an unexpected error.';
-        }
-      }
-    } else {
-      console.warn('[Voice Controller] aiText is empty — skipping ElevenLabs.');
-      ttsError = 'No text available for voice synthesis.';
-    }
-
+    // ── 3. Respond (TEXT ONLY) ──────────────────────────────────────────────
+    // Audio is now generated ON DEMAND via a separate endpoint
     return res.json({
       success: true,
       transcript,
       text: aiText,
-      audio: audioBase64,
-      voiceType,
-      ttsError,
+      voiceType: (req.body.voiceType || 'female').toLowerCase()
     });
+
   } catch (err) {
     console.error('[Voice Controller Error]:', err);
-
-    return res.status(500).json({
-      success: false,
-      errorType: 'SERVER_ERROR',
-      message: 'Voice processing failed.',
-    });
+    return res.status(500).json({ success: false, message: 'Voice processing failed.' });
   }
 };
 
-module.exports = { handleVoiceChat };
+/**
+ * VOICE-ON-DEMAND HANDLER
+ * Generates audio only when user clicks play.
+ */
+const handleTtsRequest = async (req, res) => {
+  try {
+    const { text, voiceType } = req.body;
+    if (!text) return res.status(400).json({ success: false, message: 'No text provided.' });
+
+    const audioBuffer = await generateElevenLabsAudio(text, voiceType);
+    const audioBase64 = audioBuffer.toString('base64');
+
+    return res.json({ success: true, audio: audioBase64 });
+  } catch (err) {
+    console.error('[TTS Error]:', err);
+    const status = err.message === 'QUOTA_EXCEEDED' ? 429 : 503;
+    return res.status(status).json({ success: false, message: 'Voice service unavailable.' });
+  }
+};
+
+module.exports = { handleVoiceChat, handleTtsRequest };

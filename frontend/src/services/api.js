@@ -55,8 +55,10 @@ export const voiceAPI = {
   transcribe: (formData) =>
     API.post('/voice/transcribe', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 60_000, // voice processing can take up to 60s
+      timeout: 30_000,
     }),
+  getTTS: (text, voiceType) => 
+    API.post('/voice/tts', { text, voiceType }, { timeout: 20_000 }),
 };
 
 export default API;

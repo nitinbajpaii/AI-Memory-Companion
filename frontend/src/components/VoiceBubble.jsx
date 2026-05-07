@@ -1,50 +1,80 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Pause, Volume2, Bot } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Pause, Volume2, Bot, Loader2, AlertCircle } from 'lucide-react';
+import { voiceAPI } from '../services/api';
 
-// ─── VoiceBubble ──────────────────────────────────────────────────────────────
-// Renders an audio message bubble with play/pause + animated waveform.
-// Props:
-//   audioBase64  — base64-encoded MP3 string (from ElevenLabs)
-//   text         — AI text reply (shown as caption)
-//   isAI         — true → shows "AI Generated Voice" ethical badge
-//   isUser       — true → right-aligned purple bubble
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── AUDIO CACHE ───────────────────────────────────────────────────────────
+const audioCache = new Map();
 
-const VoiceBubble = ({ audioBase64, text, isAI = false, isUser = false }) => {
-  const [isPlaying, setIsPlaying]   = useState(false);
-  const [duration, setDuration]     = useState(0);
+const VoiceBubble = ({ audioBase64: initialAudio, text, isAI = false, isUser = false, voiceType = 'female' }) => {
+  const [audioBase64, setAudioBase64] = useState(initialAudio);
+  const [isPlaying, setIsPlaying]     = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
+  const [duration, setDuration]       = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  
   const audioRef = useRef(null);
   const audioUrlRef = useRef(null);
 
-  // Build blob URL from base64 once
+  // Sync audio ref with state
   useEffect(() => {
     if (!audioBase64) return;
-    const bytes  = atob(audioBase64);
-    const arr    = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    const blob   = new Blob([arr], { type: 'audio/mpeg' });
-    const url    = URL.createObjectURL(blob);
-    audioUrlRef.current = url;
-
-    if (audioRef.current) {
-      audioRef.current.src = url;
-      // Auto-play AI voice reply
-      if (isAI) {
-        audioRef.current.play().catch(() => {}); // ignore autoplay block
-      }
+    
+    // Check cache first
+    let url;
+    if (audioCache.has(text)) {
+      url = audioCache.get(text);
+    } else {
+      const bytes = atob(audioBase64);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      const blob = new Blob([arr], { type: 'audio/mpeg' });
+      url = URL.createObjectURL(blob);
+      audioCache.set(text, url);
     }
 
-    return () => URL.revokeObjectURL(url);
-  }, [audioBase64, isAI]);
+    audioUrlRef.current = url;
+    if (audioRef.current) {
+      audioRef.current.src = url;
+    }
 
-  const togglePlay = () => {
+    return () => {
+      // Don't revoke if we're caching
+    };
+  }, [audioBase64, text]);
+
+  const togglePlay = async () => {
+    if (loading) return;
+
+    // ── VOICE ON DEMAND ──
+    if (!audioBase64 && !audioCache.has(text)) {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await voiceAPI.getTTS(text, voiceType);
+        if (data.success && data.audio) {
+          setAudioBase64(data.audio);
+          // Audio will play automatically via useEffect + ref
+          setTimeout(() => audioRef.current?.play(), 100);
+        } else {
+          throw new Error('TTS_FAILED');
+        }
+      } catch (err) {
+        console.error('[VoiceBubble] TTS Error:', err);
+        setError('Voice failed.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Normal play/pause
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch(() => {});
     }
   };
 
@@ -94,45 +124,55 @@ const VoiceBubble = ({ audioBase64, text, isAI = false, isUser = false }) => {
             {/* Play/Pause button */}
             <button
               onClick={togglePlay}
+              disabled={loading}
               className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0 ${
                 isUser
                   ? 'bg-white/20 hover:bg-white/30 text-white'
                   : 'bg-primary/15 hover:bg-primary/25 border border-primary/25 text-primary'
-              }`}
+              } disabled:opacity-50`}
             >
-              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+              {loading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : isPlaying ? (
+                <Pause size={16} fill="currentColor" />
+              ) : (
+                <Play size={16} fill="currentColor" className="ml-0.5" />
+              )}
             </button>
 
-            {/* Waveform bars + progress */}
-            <div className="flex-1 flex flex-col gap-1.5">
-              <div className="flex items-center gap-[3px] h-5">
-                {isPlaying
-                  ? [1,2,3,4,5,6].map(i => <span key={i} className="audio-bar" />)
-                  : [8,12,6,16,10,14].map((h, i) => (
-                      <span
-                        key={i}
-                        style={{ height: `${h}px` }}
-                        className={`inline-block w-[3px] rounded-sm ${isUser ? 'bg-white/50' : 'bg-primary/40'}`}
-                      />
-                    ))
-                }
+            {/* Waveform / Progress area */}
+            <div className="flex-1 min-w-[120px]">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className={`text-[10px] font-bold tracking-wider uppercase ${isUser ? 'text-white/60' : 'text-gray-500'}`}>
+                  {error ? 'Error' : isPlaying ? 'Playing' : loading ? 'Generating...' : 'Voice Note'}
+                </span>
+                <span className={`text-[10px] font-mono ${isUser ? 'text-white/70' : 'text-gray-400'}`}>
+                  {fmt(currentTime)} / {fmt(duration)}
+                </span>
               </div>
-
-              {/* Progress bar */}
-              <div className={`h-0.5 rounded-full w-full ${isUser ? 'bg-white/20' : 'bg-white/8'}`}>
-                <div
-                  className={`h-full rounded-full transition-all ${isUser ? 'bg-white/70' : 'bg-primary/70'}`}
-                  style={{ width: `${progress}%` }}
+              
+              <div className={`h-1.5 w-full rounded-full overflow-hidden ${isUser ? 'bg-white/10' : 'bg-black/5'}`}>
+                <motion.div
+                  className={`h-full ${isUser ? 'bg-white' : 'bg-primary'}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
                 />
               </div>
             </div>
 
-            {/* Duration */}
-            <span className={`text-[11px] font-mono shrink-0 ${isUser ? 'text-white/70' : 'text-gray-500'}`}>
-              {fmt(currentTime)} / {fmt(duration)}
-            </span>
-
-            <Volume2 size={13} className={isUser ? 'text-white/50' : 'text-gray-600'} />
+            {/* Error Icon */}
+            <AnimatePresence>
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-red-500"
+                >
+                  <AlertCircle size={16} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
