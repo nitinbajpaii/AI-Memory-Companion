@@ -1,8 +1,11 @@
 const axios = require('axios');
-const { getAIResponse, getGeminiClient } = require('../services/geminiService');
+const { getAIResponse, getOpenAIClient } = require('../services/geminiService');
 const LovedOneProfile = require('../models/LovedOneProfile');
 const Memory = require('../models/Memory');
 const Chat = require('../models/Chat');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -12,113 +15,79 @@ const Chat = require('../models/Chat');
 const _delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function transcribeAudio(audioBuffer, mimeType) {
-  const ai = getGeminiClient();
-  const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-  // ── MIME normalisation ───────────────────────────────────────────────────
-  let normalizedMimeType = mimeType || 'audio/webm';
-  if (normalizedMimeType === 'audio/mp3')   normalizedMimeType = 'audio/mpeg';
-  if (normalizedMimeType === 'audio/x-wav') normalizedMimeType = 'audio/wav';
-  if (normalizedMimeType === 'audio/m4a')   normalizedMimeType = 'audio/mp4';
-  if (normalizedMimeType === 'audio/3gpp')  normalizedMimeType = 'audio/mp4';
-  if (normalizedMimeType.includes('webm'))  normalizedMimeType = 'audio/webm';
+  const ai = getOpenAIClient();
 
   if (!audioBuffer || audioBuffer.length === 0) {
     throw new Error('EMPTY_AUDIO_BUFFER');
   }
 
-  const audioBase64 = audioBuffer.toString('base64');
+  // Determine file extension
+  let ext = '.webm';
+  if (mimeType === 'audio/mp3' || mimeType === 'audio/mpeg') ext = '.mp3';
+  if (mimeType === 'audio/wav' || mimeType === 'audio/x-wav') ext = '.wav';
+  if (mimeType === 'audio/mp4' || mimeType === 'audio/m4a' || mimeType === 'audio/3gpp') ext = '.mp4';
+  
+  // Create a temporary file
+  const tempFilePath = path.join(os.tmpdir(), `audio_${Date.now()}_${Math.floor(Math.random() * 1000)}${ext}`);
+  fs.writeFileSync(tempFilePath, audioBuffer);
 
-  // ── Retry config (mirrors getAIResponse) ────────────────────────────────
   const MAX_RETRIES = 2;
   const BASE_DELAY  = 2000;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  try {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await ai.audio.transcriptions.create({
+          file: fs.createReadStream(tempFilePath),
+          model: 'whisper-1',
+        });
+
+        const transcription = response.text?.trim();
+        
+        console.log('[STT] Success on attempt', attempt + 1);
+
+        if (!transcription) throw new Error('NO_SPEECH_DETECTED');
+
+        return transcription;
+
+      } catch (err) {
+        const msg    = (err.message || '').toLowerCase();
+        const status = err.status || (err.response ? err.response.status : null);
+
+        // ── Pass-through errors — do not retry ───────────────────────────
+        if (err.message === 'NO_SPEECH_DETECTED')  throw err;
+
+        console.error('[STT] OpenAI error (attempt', attempt + 1, '):', err.response?.data || err.message);
+
+        // ── Retryable: 429 quota or 503 overloaded ───────────────────────
+        const isQuota = status === 429 || msg.includes('quota') || msg.includes('rate limit');
+        const isOverloaded = status >= 500 || msg.includes('overloaded') || msg.includes('timeout') || msg.includes('network');
+
+        if ((isQuota || isOverloaded) && attempt < MAX_RETRIES) {
+          const wait = BASE_DELAY * (attempt + 1);
+          console.warn(`[STT] Temp error — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`);
+          await _delay(wait);
+          continue;
+        }
+
+        if (isQuota) throw new Error('QUOTA_EXCEEDED');
+
+        // ── Catch-all ────────────────────────────────────────────────────
+        throw new Error('TRANSCRIPTION_SERVICE_ERROR');
+      }
+    }
+  } finally {
+    // Cleanup temporary file
     try {
-      const result = await model.generateContent([
-        {
-          inlineData: {
-            mimeType: normalizedMimeType,
-            data: audioBase64,
-          },
-        },
-        { text: 'Transcribe this audio exactly and return only the spoken text.' },
-      ]);
-
-      const response = await result.response;
-      const transcription = response.text()?.trim();
-      
-      console.log('[STT] Success on attempt', attempt + 1);
-
-      if (!transcription) throw new Error('NO_SPEECH_DETECTED');
-
-      return transcription;
-
-    } catch (err) {
-      const msg    = (err.message || '').toLowerCase();
-      const status = err.status || err.httpErrorCode ||
-                     (err.response ? err.response.status : null);
-
-      // ── Pass-through errors — do not retry ───────────────────────────
-      if (err.message === 'NO_SPEECH_DETECTED')  throw err;
-      if (msg.includes('safety') || msg.includes('blocked')) {
-        throw new Error('SAFETY_BLOCKED');
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
       }
-
-      console.error('[STT] Gemini error (attempt', attempt + 1, '):', err.response?.data || err.message);
-
-      // ── Retryable: 429 quota or 503 overloaded ───────────────────────
-      const isQuota =
-        status === 429 ||
-        msg.includes('quota') || msg.includes('rate limit') ||
-        msg.includes('rate_limit') || msg.includes('resource_exhausted') ||
-        msg.includes('exhausted') || msg.includes('too many requests') ||
-        msg.includes('requests per minute') || msg.includes('requests per day') ||
-        msg.includes('daily limit') || msg.includes('rpm') || msg.includes('rpd') ||
-        (msg.includes('token') && msg.includes('limit'));
-
-      const isOverloaded =
-        status === 503 ||
-        msg.includes('overloaded') || msg.includes('service unavailable') ||
-        msg.includes('unavailable');
-
-      if ((isQuota || isOverloaded) && attempt < MAX_RETRIES) {
-        const wait = BASE_DELAY * (attempt + 1);
-        console.warn(`[STT] ${isQuota ? '429 Quota' : '503 Overloaded'} — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`);
-        await _delay(wait);
-        continue;
-      }
-
-      if (isQuota || isOverloaded) throw new Error('QUOTA_EXCEEDED');
-
-      // ── Network / server errors — retry ─────────────────────────────
-      const isNetwork =
-        (status >= 500 && status !== 503) ||
-        msg.includes('timeout') || msg.includes('network') ||
-        msg.includes('econnreset') || msg.includes('socket') ||
-        msg.includes('fetch failed');
-
-      if (isNetwork && attempt < MAX_RETRIES) {
-        const wait = BASE_DELAY * (attempt + 1);
-        console.warn(`[STT] Network error — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`);
-        await _delay(wait);
-        continue;
-      }
-
-      // ── 404 / model not found ────────────────────────────────────────
-      if (
-        msg.includes('404') || msg.includes('not found') ||
-        (msg.includes('model') && (msg.includes('invalid') || msg.includes('not found')))
-      ) {
-        throw new Error('MODEL_NOT_FOUND');
-      }
-
-      // ── Catch-all ────────────────────────────────────────────────────
-      throw new Error('TRANSCRIPTION_SERVICE_ERROR');
+    } catch (e) {
+      console.error('[STT] Failed to delete temp file:', e);
     }
   }
 
-  // Safety net — should never reach here
+  // Safety net
   throw new Error('TRANSCRIPTION_SERVICE_ERROR');
 }
 
