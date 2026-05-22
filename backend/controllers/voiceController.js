@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { getAIResponse, getOpenAIClient } = require('../services/geminiService');
+const { getAIResponse, getOpenAIClient } = require('../services/groqService');
 const LovedOneProfile = require('../models/LovedOneProfile');
 const Memory = require('../models/Memory');
 const Chat = require('../models/Chat');
