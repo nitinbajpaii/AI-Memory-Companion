@@ -3,18 +3,14 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Heart, Info, AlertCircle, Loader2, Mic,
-  Pin, ChevronRight, MessageCircle, Sparkles, Clock, WifiOff, User, Bot,
+  Pin, ChevronRight, MessageCircle, Sparkles, Clock, WifiOff,
 } from 'lucide-react';
 import ChatBubble from '../components/ChatBubble';
-import VoiceRecorder from '../components/VoiceRecorder';
-import VoiceBubble from '../components/VoiceBubble';
 import Button from '../components/Button';
 import { chatAPI, profileAPI, memoryAPI } from '../services/api';
 
-// ─── Constants ─────────────────────────────────────────────────────────────
 const DEBOUNCE_MS = 2000;
 
-// ─── ErrorCard ─────────────────────────────────────────────────────────────
 const ErrorCard = ({ errorType, message, onRetry, canRetry }) => {
   const isQuota = errorType === 'QUOTA_EXCEEDED';
   const config = isQuota
@@ -58,7 +54,6 @@ const ErrorCard = ({ errorType, message, onRetry, canRetry }) => {
   );
 };
 
-// ─── Chat Page ──────────────────────────────────────────────────────────────
 const Chat = () => {
   const [messages, setMessages]         = useState([]);
   const [input, setInput]               = useState('');
@@ -68,10 +63,9 @@ const Chat = () => {
   const [errorInfo, setErrorInfo]       = useState(null);
   const [panelOpen, setPanelOpen]       = useState(false);
   const [initialLoad, setInitialLoad]   = useState(true);
-  // Voice state
-  const [voiceMode, setVoiceMode]       = useState(false);  // show recorder
-  const [voiceType, setVoiceType]       = useState('female'); // 'male' | 'female'
-  const [voiceError, setVoiceError]     = useState(null);
+  const [voiceType, setVoiceType]       = useState('female');
+  const [isListening, setIsListening]   = useState(false);
+  const [recognition, setRecognition]   = useState(null);
 
   const scrollRef   = useRef(null);
   const textareaRef = useRef(null);
@@ -81,7 +75,27 @@ const Chat = () => {
 
   const user = JSON.parse(localStorage.getItem('user'));
 
-  // ── Load data on mount ──────────────────────────────────────────────────
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new SpeechRec();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'en-US';
+      rec.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        handleVoiceMessageSend(transcript);
+      };
+      rec.onerror = (e) => {
+        console.error('Speech recognition error', e);
+        setIsListening(false);
+      };
+      rec.onend = () => setIsListening(false);
+      setRecognition(rec);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -107,25 +121,32 @@ const Chat = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [user._id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user._id]);
 
-  // ── Auto-scroll ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, loading]);
 
-  // ── Optimized Text send handler ───────────────────────────────────────────
-  const handleSend = useCallback(async (e, retryText = null) => {
-    if (e) e.preventDefault();
-    const text = retryText ?? input.trim();
+  const playAudio = (base64Audio) => {
+    try {
+      const audioBlob = new Blob([Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch (error) {
+      console.error('Failed to play audio:', error);
+    }
+  };
+
+  const handleVoiceMessageSend = async (text) => {
     if (!text || loading || isInFlight.current) return;
 
+    console.log("Sending voice message to backend");
     const now = Date.now();
-    if (!retryText && now - lastSentAt.current < DEBOUNCE_MS) return;
+    if (now - lastSentAt.current < DEBOUNCE_MS) return;
 
-    // ── Request Cancellation Setup ──────────────────────────────────────────
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
@@ -133,7 +154,52 @@ const Chat = () => {
     lastSentAt.current = now;
     setErrorInfo(null);
 
-    // ── OPTIMISTIC UI: Add user message instantly ──────────────────────────
+    const newUserMsg = { role: 'user', content: `🎤 ${text}`, createdAt: new Date() };
+    setMessages(prev => [...prev, newUserMsg]);
+
+    setLoading(true);
+
+    try {
+      const { data } = await chatAPI.sendVoiceMessage(text, voiceType, { signal: abortControllerRef.current.signal });
+      
+      if (data.success) {
+        const aiMessage = data.message;
+        setMessages(prev => [...prev, { role: 'assistant', content: aiMessage, createdAt: new Date() }]);
+        if (data.audio) {
+          playAudio(data.audio);
+        }
+      }
+    } catch (err) {
+      if (err.name === 'CanceledError') return;
+      
+      console.error('[Chat] Error:', err);
+      const errorData = err.response?.data;
+      setErrorInfo({
+        errorType: errorData?.errorType || 'NETWORK_ERROR',
+        message: errorData?.message || 'Connection weak. Please try again.'
+      });
+    } finally {
+      setLoading(false);
+      isInFlight.current = false;
+    }
+  };
+
+  const handleSend = useCallback(async (e, retryText = null) => {
+    if (e) e.preventDefault();
+    const text = retryText ?? input.trim();
+    if (!text || loading || isInFlight.current) return;
+
+    console.log("Sending message to backend");
+    const now = Date.now();
+    if (!retryText && now - lastSentAt.current < DEBOUNCE_MS) return;
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+
+    isInFlight.current = true;
+    lastSentAt.current = now;
+    setErrorInfo(null);
+
     if (!retryText) {
       const newUserMsg = { role: 'user', content: text, createdAt: new Date() };
       setMessages(prev => [...prev, newUserMsg]);
@@ -143,24 +209,23 @@ const Chat = () => {
     setLoading(true);
 
     try {
-      const { data } = await chatAPI.sendMessage(text, { signal: abortControllerRef.current.signal });
+      const { data } = await chatAPI.sendTextMessage(text, { signal: abortControllerRef.current.signal });
       
       if (data.success) {
         setMessages(prev => {
-          // Double-check for duplicate assistant messages in state
           const last = prev[prev.length - 1];
           if (last?.role === 'assistant' && last?.content === data.message) return prev;
           return [...prev, { role: 'assistant', content: data.message, createdAt: new Date() }];
         });
       }
     } catch (err) {
-      if (err.name === 'CanceledError') return; // Ignore intentional cancellations
+      if (err.name === 'CanceledError') return;
       
       console.error('[Chat] Error:', err);
       const errorData = err.response?.data;
       setErrorInfo({
         errorType: errorData?.errorType || 'NETWORK_ERROR',
-        message: errorData?.message || 'Connection weak hai. Please try again.'
+        message: errorData?.message || 'Connection weak. Please try again.'
       });
     } finally {
       setLoading(false);
@@ -168,48 +233,27 @@ const Chat = () => {
     }
   }, [input, loading]);
 
-  // ── Retry ───────────────────────────────────────────────────────────────
   const handleRetry = useCallback(() => {
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-    if (lastUserMsg) handleSend(null, lastUserMsg.content);
+    if (lastUserMsg) {
+      const text = lastUserMsg.content.replace('🎤 ', '');
+      handleSend(null, text);
+    }
   }, [messages, handleSend]);
 
-  // ── Voice result handler ─────────────────────────────────────────────────
-  // Called by VoiceRecorder when the full pipeline succeeds
-  const handleVoiceResult = useCallback((result) => {
-    // result = { success, transcript, text, audio, voiceType, ttsError }
-    setVoiceMode(false);
-    
-    if (result.ttsError) {
-      setVoiceError(result.ttsError);
-    } else {
-      setVoiceError(null);
+  const toggleListening = () => {
+    if (!recognition) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
     }
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
+  };
 
-    // Add user voice message bubble
-    setMessages(prev => [
-      ...prev,
-      {
-        role:      'user',
-        content:   `🎤 ${result.transcript}`,
-        createdAt: new Date(),
-        isVoice:   true,
-      },
-    ]);
-
-    // Add AI reply bubble (TEXT ONLY by default)
-    setMessages(prev => [
-      ...prev,
-      {
-        role:      'assistant',
-        content:   result.text,
-        createdAt: new Date(),
-        isVoiceNote: true, // Mark as voice-on-demand
-      },
-    ]);
-  }, []);
-
-  // ── No profile ───────────────────────────────────────────────────────────
   if (!initialLoad && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] max-w-md mx-auto text-center gap-6">
@@ -239,10 +283,8 @@ const Chat = () => {
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] sm:h-[calc(100vh-6rem)] gap-4 sm:gap-5 relative">
 
-      {/* ── Main Chat Area ─────────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 glass-card rounded-2xl sm:rounded-3xl border border-white/6 overflow-hidden min-w-0 h-full">
 
-        {/* Chat Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/6 glass-dark shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center text-white font-black text-base sm:text-lg shadow-lg shadow-primary/25">
@@ -258,7 +300,6 @@ const Chat = () => {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Voice gender toggle - simplified for mobile */}
             <div className="flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white/4 border border-white/6 text-[10px] sm:text-xs font-medium">
               <button
                 onClick={() => setVoiceType('female')}
@@ -283,10 +324,8 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* Messages Area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 scroll-smooth">
 
-          {/* Empty state */}
           {messages.length === 0 && !loading && !initialLoad && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -314,34 +353,17 @@ const Chat = () => {
             </motion.div>
           )}
 
-          {/* Message bubbles */}
           <AnimatePresence initial={false}>
-            {messages.map((msg, i) => {
-              // Voice message with audio — use VoiceBubble
-              if (msg.role === 'assistant' && (msg.isVoice || msg.isVoiceNote)) {
-                return (
-                  <VoiceBubble
-                    key={i}
-                    audioBase64={msg.audio}
-                    text={msg.content}
-                    voiceType={voiceType}
-                    isAI
-                  />
-                );
-              }
-              // Voice user transcript bubble (styled slightly different)
-              return (
-                <ChatBubble
-                  key={i}
-                  message={msg.content}
-                  role={msg.role}
-                  timestamp={msg.createdAt}
-                />
-              );
-            })}
+            {messages.map((msg, i) => (
+              <ChatBubble
+                key={i}
+                message={msg.content}
+                role={msg.role}
+                timestamp={msg.createdAt}
+              />
+            ))}
           </AnimatePresence>
 
-          {/* Typing indicator */}
           {loading && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -361,25 +383,6 @@ const Chat = () => {
             </motion.div>
           )}
 
-          {/* Voice error */}
-          <AnimatePresence>
-            {voiceError && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="flex justify-center"
-              >
-                <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-red-500/8 border border-red-500/20 text-red-400 text-sm max-w-sm w-full">
-                  <AlertCircle size={16} className="shrink-0" />
-                  <span className="flex-1">{voiceError}</span>
-                  <button onClick={() => setVoiceError(null)} className="text-red-500 hover:text-red-300 text-xs">✕</button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Chat error */}
           <AnimatePresence>
             {errorInfo && (
               <ErrorCard
@@ -392,10 +395,8 @@ const Chat = () => {
           </AnimatePresence>
         </div>
 
-        {/* Input Area */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-white/6 glass-dark shrink-0">
 
-          {/* Quota banner */}
           {isQuotaError && (
             <div className="mb-2 sm:mb-3 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-orange-500/10 border border-orange-500/20 text-[10px] sm:text-xs text-orange-300 text-center">
               ⚡ Daily AI limit reached — sending is disabled until quota resets.
@@ -403,61 +404,58 @@ const Chat = () => {
           )}
 
           <form onSubmit={handleSend} className="flex items-end gap-2 sm:gap-3">
+            <motion.button
+              type="button"
+              onClick={toggleListening}
+              disabled={loading || isQuotaError}
+              whileHover={{ scale: !loading ? 1.06 : 1 }}
+              whileTap={{ scale: !loading ? 0.92 : 1 }}
+              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all shadow-lg shrink-0 ${
+                isListening 
+                  ? 'bg-red-500 text-white animate-pulse' 
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/8 hover:text-white'
+              }`}
+            >
+              <Mic size={16} className={isListening ? 'fill-current' : ''} />
+            </motion.button>
 
-            {/* Voice Recorder or mic button */}
-            <AnimatePresence mode="wait">
-              <VoiceRecorder
-                key={voiceMode ? "recorder" : "idle-recorder"}
-                onVoiceResult={handleVoiceResult}
-                onError={(msg) => { setVoiceError(msg); if(voiceMode) setVoiceMode(false); }}
+            <div className="flex-1 relative">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                placeholder={
+                  isQuotaError
+                    ? 'Limit reached…'
+                    : 'Say hello…'
+                }
+                value={input}
                 disabled={loading || isQuotaError}
-                voiceType={voiceType}
+                onChange={e => {
+                  setInput(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!loading && !isQuotaError) handleSend(e);
+                  }
+                }}
+                autoComplete="off"
+                className="w-full bg-white/5 border border-white/8 rounded-xl sm:rounded-2xl py-2.5 sm:py-3 px-4 sm:px-5 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200 resize-none placeholder:text-gray-600 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ maxHeight: '120px', overflowY: 'auto' }}
               />
-            </AnimatePresence>
+            </div>
 
-            {/* Text input — hidden while in voice mode */}
-            {!voiceMode && (
-              <>
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    rows={1}
-                    placeholder={
-                      isQuotaError
-                        ? 'Limit reached…'
-                        : 'Say hello…'
-                    }
-                    value={input}
-                    disabled={loading || isQuotaError}
-                    onChange={e => {
-                      setInput(e.target.value);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (!loading && !isQuotaError) handleSend(e);
-                      }
-                    }}
-                    autoComplete="off"
-                    className="w-full bg-white/5 border border-white/8 rounded-xl sm:rounded-2xl py-2.5 sm:py-3 px-4 sm:px-5 text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200 resize-none placeholder:text-gray-600 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ maxHeight: '120px', overflowY: 'auto' }}
-                  />
-                </div>
-
-                {/* Send button */}
-                <motion.button
-                  type="submit"
-                  disabled={!canSend || isQuotaError}
-                  whileHover={{ scale: canSend ? 1.06 : 1 }}
-                  whileTap={{ scale: canSend ? 0.92 : 1 }}
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-indigo text-white flex items-center justify-center hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/25 shrink-0"
-                >
-                  {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                </motion.button>
-              </>
-            )}
+            <motion.button
+              type="submit"
+              disabled={!canSend || isQuotaError}
+              whileHover={{ scale: canSend ? 1.06 : 1 }}
+              whileTap={{ scale: canSend ? 0.92 : 1 }}
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-indigo text-white flex items-center justify-center hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/25 shrink-0"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+            </motion.button>
           </form>
 
           <p className="hidden sm:flex text-center text-[11px] text-gray-700 mt-3 items-center justify-center gap-1.5">
@@ -467,7 +465,6 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* ── Pinned Memories Panel ── */}
       <AnimatePresence>
         {panelOpen && (
           <motion.div

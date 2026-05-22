@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
 });
 
 API.interceptors.request.use((config) => {
@@ -12,7 +12,6 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 Unauthorized for session persistence
 API.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -30,7 +29,9 @@ export const authAPI = {
 };
 
 export const chatAPI = {
-  sendMessage: (message, options = {}) => API.post('/chat', { message }, options),
+  sendTextMessage: (message, options = {}) => API.post('/chat/text', { message }, options),
+  sendVoiceMessage: (message, voiceGender, options = {}) => 
+    API.post('/chat/voice', { message, voiceGender }, options),
   getHistory: (userId) => API.get(`/chat/history/${userId}`),
 };
 
@@ -49,16 +50,6 @@ export const memoryAPI = {
 export const reviewsAPI = {
   getReviews:    ()     => API.get('/reviews'),
   submitReview:  (data) => API.post('/reviews', data),
-};
-
-export const voiceAPI = {
-  transcribe: (formData) =>
-    API.post('/voice/transcribe', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 30_000,
-    }),
-  getTTS: (text, voiceType) => 
-    API.post('/voice/tts', { text, voiceType }, { timeout: 20_000 }),
 };
 
 export default API;
