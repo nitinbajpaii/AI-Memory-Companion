@@ -19,8 +19,8 @@ async function getAIResponse(prompt) {
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      console.log("Groq request sent:", prompt.slice(0, 100));
-      
+      console.log('[Groq] Request sent:', prompt.slice(0, 100));
+
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
@@ -29,7 +29,6 @@ async function getAIResponse(prompt) {
       });
 
       const text = response.choices[0]?.message?.content;
-
       if (!text) throw new Error('EMPTY_RESPONSE');
 
       return { success: true, text: text.trim() };
@@ -38,29 +37,28 @@ async function getAIResponse(prompt) {
       const status = error.status || error.response?.status;
       const msg = (error.message || '').toLowerCase();
 
-      console.error("Groq error:", error);
+      console.error('[Groq] Error:', error.message);
 
       if (status === 429 || msg.includes('quota') || msg.includes('limit')) {
-        return { 
-          success: false, 
-          errorType: "QUOTA_EXCEEDED", 
-          message: "Daily AI request limit reached. Please try again tomorrow." 
+        return {
+          success: false,
+          errorType: 'QUOTA_EXCEEDED',
+          message: 'Daily AI request limit reached. Please try again tomorrow.',
         };
       }
 
       const isRetryable = status >= 500 || msg.includes('overloaded') || msg.includes('timeout') || msg.includes('network');
-      
       if (isRetryable && attempt < MAX_RETRIES) {
         const wait = BASE_DELAY * Math.pow(2, attempt);
-        console.warn(`Groq temp error. Retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms...`);
+        console.warn(`[Groq] Temp error. Retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms...`);
         await delay(wait);
         continue;
       }
 
-      return { 
-        success: false, 
-        errorType: "TEMPORARY_FAILURE", 
-        message: "AI service temporarily unavailable. Please try again shortly." 
+      return {
+        success: false,
+        errorType: 'TEMPORARY_FAILURE',
+        message: 'AI service temporarily unavailable. Please try again shortly.',
       };
     }
   }

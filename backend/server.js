@@ -16,7 +16,7 @@ const voiceRoutes   = require('./routes/voiceRoutes');
 const { checkDbConnection } = require('./middleware/dbStatus');
 
 // Startup Check
-const requiredEnv = ['GEMINI_API_KEY', 'JWT_SECRET', 'MONGO_URI', 'ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID_MALE', 'ELEVENLABS_VOICE_ID_FEMALE'];
+const requiredEnv = ['GROQ_API_KEY', 'JWT_SECRET', 'MONGO_URI', 'ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID_MALE', 'ELEVENLABS_VOICE_ID_FEMALE'];
 const missingEnv = requiredEnv.filter(env => !process.env[env] || process.env[env].includes('your_') || process.env[env].includes('<'));
 
 if (missingEnv.length > 0) {

@@ -131,19 +131,30 @@ const Chat = () => {
 
   const playAudio = (base64Audio) => {
     try {
-      const audioBlob = new Blob([Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))], { type: 'audio/mpeg' });
+      console.log('[Chat] Playing audio, base64 length:', base64Audio?.length);
+      if (!base64Audio) {
+        console.warn('[Chat] No audio data to play');
+        return;
+      }
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))],
+        { type: 'audio/mpeg' }
+      );
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      audio.play();
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+      audio.play().catch((err) => {
+        console.error('[Chat] Audio playback failed:', err);
+      });
     } catch (error) {
-      console.error('Failed to play audio:', error);
+      console.error('[Chat] Failed to create/play audio:', error);
     }
   };
 
   const handleVoiceMessageSend = async (text) => {
     if (!text || loading || isInFlight.current) return;
 
-    console.log("Sending voice message to backend");
+    console.log('[Chat] Sending voice message to backend:', text.slice(0, 60));
     const now = Date.now();
     if (now - lastSentAt.current < DEBOUNCE_MS) return;
 
@@ -162,17 +173,23 @@ const Chat = () => {
     try {
       const { data } = await chatAPI.sendVoiceMessage(text, voiceType, { signal: abortControllerRef.current.signal });
       
+      console.log('[Chat] Voice Response:', data);
+      console.log('[Chat] Audio Exists:', !!data.audio);
+      console.log('Audio received:', !!data.audio);
+
       if (data.success) {
         const aiMessage = data.message;
         setMessages(prev => [...prev, { role: 'assistant', content: aiMessage, createdAt: new Date() }]);
         if (data.audio) {
           playAudio(data.audio);
+        } else {
+          console.warn('[Chat] No audio in response — text-only fallback');
         }
       }
     } catch (err) {
       if (err.name === 'CanceledError') return;
       
-      console.error('[Chat] Error:', err);
+      console.error('[Chat] Voice error:', err);
       const errorData = err.response?.data;
       setErrorInfo({
         errorType: errorData?.errorType || 'NETWORK_ERROR',

@@ -157,7 +157,25 @@ const VoiceRecorder = ({ onVoiceResult, onError, disabled = false, voiceType = '
 
       const { data } = await voiceAPI.transcribe(formData);
 
+      console.log('[VoiceRecorder] Voice Response:', data);
+      console.log('[VoiceRecorder] Audio Exists:', !!data.audio);
+
       if (data.success) {
+        // Auto-play audio if returned from backend
+        if (data.audio) {
+          try {
+            const audioBlob = new Blob(
+              [Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))],
+              { type: 'audio/mpeg' }
+            );
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audioEl = new Audio(audioUrl);
+            audioEl.onended = () => URL.revokeObjectURL(audioUrl);
+            await audioEl.play();
+          } catch (playErr) {
+            console.error('[VoiceRecorder] Audio playback failed:', playErr);
+          }
+        }
         onVoiceResult?.(data);
         discard(); // reset recorder
       } else {

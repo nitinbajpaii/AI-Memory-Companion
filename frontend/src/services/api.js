@@ -30,7 +30,7 @@ export const authAPI = {
 
 export const chatAPI = {
   sendTextMessage: (message, options = {}) => API.post('/chat/text', { message }, options),
-  sendVoiceMessage: (message, voiceGender, options = {}) => 
+  sendVoiceMessage: (message, voiceGender, options = {}) =>
     API.post('/chat/voice', { message, voiceGender }, options),
   getHistory: (userId) => API.get(`/chat/history/${userId}`),
 };
@@ -48,8 +48,29 @@ export const memoryAPI = {
 };
 
 export const reviewsAPI = {
-  getReviews:    ()     => API.get('/reviews'),
-  submitReview:  (data) => API.post('/reviews', data),
+  getReviews:   () =>   API.get('/reviews'),
+  submitReview: (data) => API.post('/reviews', data),
+};
+
+/**
+ * voiceAPI — used by VoiceRecorder (audio file upload) and VoiceBubble (on-demand TTS).
+ * These routes map to /api/voice/* in voiceRoutes.js.
+ */
+export const voiceAPI = {
+  /**
+   * Upload a recorded audio blob → transcribe → AI reply → (optional) audio back.
+   * @param {FormData} formData  - must include 'audio' (Blob) and 'voiceType' ('male'|'female')
+   */
+  transcribe: (formData) =>
+    API.post('/voice/transcribe', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  /**
+   * On-demand TTS: given text + voiceType, returns base64 audio.
+   */
+  getTTS: (text, voiceType = 'female') =>
+    API.post('/voice/tts', { text, voiceType }),
 };
 
 export default API;
