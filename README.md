@@ -16,18 +16,18 @@ Powered by **Groq API**
 
 Features:
 
-* emotionally aware conversations
-* grief healing support
-* companionship experience
-* memory-inspired emotional conversations
-* ultra-fast AI responses
+* Emotion-aware conversations
+* Grief healing support
+* Companionship experience
+* Memory-inspired emotional conversations
+* Ultra-fast AI responses
 
 The AI adapts tone dynamically based on:
 
-* sadness
-* loneliness
-* emotional stress
-* normal conversation
+* Sadness
+* Loneliness
+* Emotional stress
+* Normal conversation
 
 ---
 
@@ -42,10 +42,10 @@ Supports:
 
 Users can:
 
-* speak directly using microphone
-* send text messages
-* receive realistic AI voice replies
-* interact in real-time
+* Speak directly using microphone
+* Send text messages
+* Receive realistic AI voice replies
+* Interact in real-time
 
 ---
 
@@ -76,41 +76,41 @@ Uses:
 
 Benefits:
 
-* zero transcription cost
-* no Gemini/OpenAI speech limits
-* low latency voice interaction
-* fully frontend-powered transcription
+* Zero transcription cost
+* No Gemini/OpenAI speech limits
+* Low latency voice interaction
+* Fully frontend-powered transcription
 
 ---
 
 ## 💙 Memory Healing Features
 
-* create personal memory spaces
-* preserve emotional memories
-* supportive AI conversations
-* grief healing interaction system
-* emotionally safe companionship
+* Create personal memory spaces
+* Preserve emotional memories
+* Supportive AI conversations
+* Grief healing interaction system
+* Emotionally safe companionship
 
 ---
 
 ## 🔐 Secure Authentication
 
 * JWT-based authentication
-* protected routes
-* secure login/signup
-* persistent sessions
-* profile dropdown system
+* Protected routes
+* Secure login/signup
+* Persistent sessions
+* User profile management
 
 ---
 
 # 🎨 Premium SaaS UI
 
-* dark glassmorphism UI
+* Dark glassmorphism UI
 * Framer Motion animations
-* premium landing page
-* responsive design
-* smooth transitions
-* mobile optimized experience
+* Premium landing page
+* Responsive design
+* Smooth transitions
+* Mobile-optimized experience
 
 ---
 
@@ -225,19 +225,19 @@ vercel
 
 ## Backend → Render
 
-Root Directory:
+### Root Directory
 
 ```txt
 backend
 ```
 
-Build Command:
+### Build Command
 
 ```bash
 npm install
 ```
 
-Start Command:
+### Start Command
 
 ```bash
 npm start
@@ -254,9 +254,9 @@ npm start
 0.0.0.0/0
 ```
 
-3. Create database user
-4. Copy MongoDB connection string
-5. Add in:
+3. Create a database user
+4. Copy the connection string
+5. Add it to:
 
 ```env
 MONGO_URI
@@ -280,7 +280,7 @@ Users can dynamically switch between companion voices.
 
 ---
 
-# ⚡ Smart Voice System
+# ⚡ Smart Interaction System
 
 ## Text Message Flow
 
@@ -311,10 +311,10 @@ Auto-play Voice Reply
 This platform follows emotional AI safety guidelines:
 
 * AI inspired by memories, not real identity replication
-* promotes healthy emotional recovery
-* avoids harmful dependency patterns
-* supports healing and companionship
-* encourages real-world human connection
+* Promotes healthy emotional recovery
+* Avoids harmful dependency patterns
+* Supports healing and companionship
+* Encourages real-world human connection
 
 ---
 
@@ -328,6 +328,17 @@ This platform follows emotional AI safety guidelines:
 * Vercel + Render deployment
 * Production-ready architecture
 * Portfolio-quality project
+
+---
+
+# 📌 Future Improvements
+
+* Multi-language support
+* Custom voice cloning
+* Emotion detection analytics
+* Memory timeline visualization
+* AI journaling features
+* Mobile app version
 
 ---
 
