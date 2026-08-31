@@ -82,11 +82,11 @@ const ProfileDropdown = () => {
         }}
       >
         <div
-          className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shadow-md"
+          className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black"
           style={{
-            background: 'linear-gradient(135deg, var(--color-primary), var(--color-indigo))',
+            background: 'var(--color-primary-dark)',
             color: '#fff',
-            boxShadow: '0 4px 10px color-mix(in srgb, var(--color-primary) 25%, transparent)',
+            boxShadow: '0 2px 8px color-mix(in srgb, var(--color-primary-dark) 40%, transparent)',
           }}
         >
           {user?.name?.[0]?.toUpperCase() || 'U'}
@@ -127,10 +127,11 @@ const ProfileDropdown = () => {
             >
               <div className="flex items-center gap-3 mb-1">
                 <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center font-black shadow-md"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center font-black"
                   style={{
-                    background: 'linear-gradient(135deg, var(--color-primary), var(--color-indigo))',
+                    background: 'var(--color-primary-dark)',
                     color: '#fff',
+                    boxShadow: '0 2px 10px color-mix(in srgb, var(--color-primary-dark) 35%, transparent)',
                   }}
                 >
                   {user?.name?.[0]?.toUpperCase() || 'U'}

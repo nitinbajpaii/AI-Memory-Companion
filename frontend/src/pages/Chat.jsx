@@ -339,7 +339,13 @@ const Chat = () => {
           style={{ borderColor: 'var(--border-soft)' }}
         >
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center text-white font-black text-base sm:text-lg shadow-lg shadow-primary/25">
+            <div
+              className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-black text-base sm:text-lg"
+              style={{
+                background: 'var(--color-primary-dark)',
+                boxShadow: '0 4px 14px color-mix(in srgb, var(--color-primary-dark) 35%, transparent)',
+              }}
+            >
               {profile?.name?.[0] || '?'}
             </div>
             <div className="min-w-0">

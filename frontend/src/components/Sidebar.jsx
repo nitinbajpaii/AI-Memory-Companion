@@ -170,7 +170,13 @@ const SidebarContent = ({ onClose }) => {
             border: '1px solid var(--border-soft)',
           }}
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center text-white font-black text-sm shadow-md shadow-primary/20 shrink-0">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
+            style={{
+              background: 'var(--color-primary-dark)',
+              boxShadow: '0 2px 8px color-mix(in srgb, var(--color-primary-dark) 35%, transparent)',
+            }}
+          >
             {user?.name?.[0]?.toUpperCase() || 'U'}
           </div>
           <div className="flex-1 overflow-hidden">
