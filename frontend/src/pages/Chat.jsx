@@ -88,7 +88,7 @@ const Chat = () => {
   const [errorInfo, setErrorInfo]       = useState(null);
   const [panelOpen, setPanelOpen]       = useState(false);
   const [initialLoad, setInitialLoad]   = useState(true);
-  const [voiceType, setVoiceType]       = useState('female');
+  const [voiceType, setVoiceType]       = useState(null); // null until profile loads
   const [isListening, setIsListening]   = useState(false);
   const [recognition, setRecognition]   = useState(null);
 
@@ -132,8 +132,11 @@ const Chat = () => {
         ]);
         if (!cancelled) {
           setMessages(histRes.data);
-          setProfile(profRes.data);
+          const prof = profRes.data;
+          setProfile(prof);
           setMemories(memRes.data);
+          // Initialise gender toggle from saved profile (fallback to 'female')
+          setVoiceType(prof?.gender || 'female');
         }
       } catch (err) {
         if (!cancelled) {
@@ -283,6 +286,19 @@ const Chat = () => {
     }
   }, [messages, handleSend]);
 
+  // Saves gender back to the profile so it persists across sessions
+  const handleGenderToggle = useCallback(async (gender) => {
+    setVoiceType(gender);
+    if (profile?._id) {
+      try {
+        await profileAPI.updateProfile(profile._id, { ...profile, gender });
+        setProfile(prev => ({ ...prev, gender }));
+      } catch (err) {
+        console.warn('[Chat] Failed to persist gender to profile:', err.message);
+      }
+    }
+  }, [profile]);
+
   const toggleListening = () => {
     if (!recognition) {
       alert('Speech recognition is not supported in this browser.');
@@ -372,7 +388,7 @@ const Chat = () => {
               }}
             >
               <button
-                onClick={() => setVoiceType('female')}
+                onClick={() => handleGenderToggle('female')}
                 className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg transition-all"
                 style={voiceType === 'female'
                   ? { background: 'var(--color-primary)', color: 'var(--user-bubble-text)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
@@ -384,7 +400,7 @@ const Chat = () => {
                 ♀<span className="hidden xs:inline ml-0.5">Female</span>
               </button>
               <button
-                onClick={() => setVoiceType('male')}
+                onClick={() => handleGenderToggle('male')}
                 className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg transition-all"
                 style={voiceType === 'male'
                   ? { background: 'var(--color-primary-dark)', color: 'var(--user-bubble-text)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }

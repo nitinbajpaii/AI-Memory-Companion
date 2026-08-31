@@ -44,6 +44,7 @@ const Profile = () => {
     personality: '',
     habits: '',
     commonPhrases: '',
+    gender: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,6 +68,10 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!profile.gender) {
+      setError('Please select a gender for your loved one.');
+      return;
+    }
     setSaving(true);
     setError('');
     setSuccess('');
@@ -162,6 +167,43 @@ const Profile = () => {
             onChange={(e) => setProfile({ ...profile, name: e.target.value })}
             required
           />
+
+          {/* Gender — required, no silent default */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium ml-1" style={{ color: 'var(--text-muted)' }}>
+              Gender <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <div className="flex gap-3">
+              {['male', 'female'].map((g) => {
+                const isSel = profile.gender === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setProfile({ ...profile, gender: g })}
+                    className="flex-1 py-3 rounded-2xl border font-semibold text-sm transition-all"
+                    style={isSel ? {
+                      background: 'var(--color-primary)',
+                      borderColor: 'var(--color-primary)',
+                      color: '#fff',
+                      boxShadow: '0 4px 14px color-mix(in srgb, var(--color-primary) 35%, transparent)',
+                    } : {
+                      background: 'var(--surface-overlay)',
+                      borderColor: 'var(--border-soft)',
+                      color: 'var(--text-muted)',
+                    }}
+                    onMouseEnter={(e) => { if (!isSel) e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 40%, transparent)'; }}
+                    onMouseLeave={(e) => { if (!isSel) e.currentTarget.style.borderColor = 'var(--border-soft)'; }}
+                  >
+                    {g === 'male' ? '♂ Male' : '♀ Female'}
+                  </button>
+                );
+              })}
+            </div>
+            {!profile.gender && (
+              <p className="text-xs ml-1" style={{ color: 'var(--text-subtle)' }}>Required — determines Hindi grammar in AI responses</p>
+            )}
+          </div>
 
           <Input
             label="Relation"

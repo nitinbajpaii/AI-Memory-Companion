@@ -1,7 +1,7 @@
 const LovedOneProfile = require('../models/LovedOneProfile');
 
 const createProfile = async (req, res) => {
-  const { name, relation, personality, habits, commonPhrases } = req.body;
+  const { name, relation, personality, habits, commonPhrases, gender } = req.body;
 
   try {
     const profile = await LovedOneProfile.create({
@@ -11,6 +11,7 @@ const createProfile = async (req, res) => {
       personality,
       habits,
       commonPhrases,
+      gender: gender || 'female',
     });
     res.status(201).json(profile);
   } catch (error) {
@@ -32,7 +33,7 @@ const getProfile = async (req, res) => {
 };
 
 const updateProfile = async (req, res) => {
-  const { name, relation, personality, habits, commonPhrases } = req.body;
+  const { name, relation, personality, habits, commonPhrases, gender } = req.body;
 
   try {
     const profile = await LovedOneProfile.findById(req.params.id);
@@ -47,6 +48,7 @@ const updateProfile = async (req, res) => {
       profile.personality = personality || profile.personality;
       profile.habits = habits || profile.habits;
       profile.commonPhrases = commonPhrases || profile.commonPhrases;
+      if (gender) profile.gender = gender;
 
       const updatedProfile = await profile.save();
       res.json(updatedProfile);

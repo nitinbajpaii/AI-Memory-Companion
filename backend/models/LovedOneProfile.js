@@ -26,6 +26,11 @@ const lovedOneProfileSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  gender: {
+    type: String,
+    enum: ['male', 'female'],
+    default: 'female',
+  },
   createdAt: {
     type: Date,
     default: Date.now,
