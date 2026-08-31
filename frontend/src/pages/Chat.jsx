@@ -251,7 +251,7 @@ const Chat = () => {
     setLoading(true);
 
     try {
-      const { data } = await chatAPI.sendTextMessage(text, { signal: abortControllerRef.current.signal });
+      const { data } = await chatAPI.sendTextMessage(text, voiceType, { signal: abortControllerRef.current.signal });
       
       if (data.success) {
         setMessages(prev => {
@@ -273,7 +273,7 @@ const Chat = () => {
       setLoading(false);
       isInFlight.current = false;
     }
-  }, [input, loading]);
+  }, [input, loading, voiceType]);
 
   const handleRetry = useCallback(() => {
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');

@@ -6,7 +6,8 @@ const Chat = require('../models/Chat');
 const { buildOptimizedPrompt } = require('../utils/aiHelpers');
 
 const handleTextChat = async (req, res) => {
-  const { message } = req.body;
+  const { message, voiceGender } = req.body;
+  const gender = (voiceGender || 'female').toLowerCase();
   const userId = req.user._id;
 
   try {
@@ -16,7 +17,8 @@ const handleTextChat = async (req, res) => {
       Chat.find({ userId }).sort({ createdAt: -1 }).limit(6).lean()
     ]);
 
-    const prompt = buildOptimizedPrompt(profile, memories, history.reverse(), message, 'female');
+    console.log('[Text Chat] Gender:', gender);
+    const prompt = buildOptimizedPrompt(profile, memories, history.reverse(), message, gender);
     await Chat.create({ userId, role: 'user', content: message });
     const aiResponse = await getAIResponse(prompt);
 

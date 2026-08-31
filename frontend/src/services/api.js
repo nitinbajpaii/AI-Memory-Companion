@@ -29,7 +29,7 @@ export const authAPI = {
 };
 
 export const chatAPI = {
-  sendTextMessage: (message, options = {}) => API.post('/chat/text', { message }, options),
+  sendTextMessage: (message, voiceGender, options = {}) => API.post('/chat/text', { message, voiceGender }, options),
   sendVoiceMessage: (message, voiceGender, options = {}) =>
     API.post('/chat/voice', { message, voiceGender }, options),
   getHistory: (userId) => API.get(`/chat/history/${userId}`),
