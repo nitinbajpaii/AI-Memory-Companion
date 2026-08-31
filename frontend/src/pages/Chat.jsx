@@ -286,18 +286,6 @@ const Chat = () => {
     }
   }, [messages, handleSend]);
 
-  // Saves gender back to the profile so it persists across sessions
-  const handleGenderToggle = useCallback(async (gender) => {
-    setVoiceType(gender);
-    if (profile?._id) {
-      try {
-        await profileAPI.updateProfile(profile._id, { ...profile, gender });
-        setProfile(prev => ({ ...prev, gender }));
-      } catch (err) {
-        console.warn('[Chat] Failed to persist gender to profile:', err.message);
-      }
-    }
-  }, [profile]);
 
   const toggleListening = () => {
     if (!recognition) {
@@ -380,38 +368,6 @@ const Chat = () => {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div
-              className="flex items-center gap-1 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-medium"
-              style={{
-                background: 'var(--surface-overlay)',
-                borderColor: 'var(--border-soft)',
-              }}
-            >
-              <button
-                onClick={() => handleGenderToggle('female')}
-                className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg transition-all"
-                style={voiceType === 'female'
-                  ? { background: 'var(--color-primary)', color: 'var(--user-bubble-text)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
-                  : { color: 'var(--text-muted)' }
-                }
-                onMouseEnter={(e) => { if (voiceType !== 'female') e.currentTarget.style.color = 'var(--text-strong)'; }}
-                onMouseLeave={(e) => { if (voiceType !== 'female') e.currentTarget.style.color = 'var(--text-muted)'; }}
-              >
-                ♀<span className="hidden xs:inline ml-0.5">Female</span>
-              </button>
-              <button
-                onClick={() => handleGenderToggle('male')}
-                className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg transition-all"
-                style={voiceType === 'male'
-                  ? { background: 'var(--color-primary-dark)', color: 'var(--user-bubble-text)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
-                  : { color: 'var(--text-muted)' }
-                }
-                onMouseEnter={(e) => { if (voiceType !== 'male') e.currentTarget.style.color = 'var(--text-strong)'; }}
-                onMouseLeave={(e) => { if (voiceType !== 'male') e.currentTarget.style.color = 'var(--text-muted)'; }}
-              >
-                ♂<span className="hidden xs:inline ml-0.5">Male</span>
-              </button>
-            </div>
             <button
               onClick={() => setPanelOpen(p => !p)}
               className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl border transition-all text-[10px] sm:text-xs font-medium"
