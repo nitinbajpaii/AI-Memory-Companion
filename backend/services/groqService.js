@@ -21,20 +21,29 @@ async function getAIResponse(prompt) {
     try {
       console.log('[Groq] Request sent:', prompt.slice(0, 100));
 
-      // NOTE: openai/gpt-oss-120b is used globally (replaces the retired llama-3.1-8b-instant).
-      // This is a drop-in replacement on Groq's chat completions API with the same request/response
-      // shape. It also has stronger Hindi/Hinglish grammar than the old 8b model.
+      // NOTE: openai/gpt-oss-120b is a reasoning model (replaces retired llama-3.1-8b-instant).
+      // Reasoning models spend part of the token budget "thinking" before replying, so:
+      //   - reasoning_effort: 'low'   → limits internal reasoning tokens, leaves room for the reply
+      //   - reasoning_format: 'hidden' → strips reasoning text; only final answer lands in message.content
+      //   - max_completion_tokens: 1024 → enough budget for reasoning + a full warm reply at low effort
       // For a lighter/faster option closer to the old 8b tier, try 'openai/gpt-oss-20b'.
 
       const response = await groq.chat.completions.create({
         model: 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
-        max_tokens: 500,
+        max_completion_tokens: 1024,
+        reasoning_effort: 'low',
+        reasoning_format: 'hidden',
       });
 
       const text = response.choices[0]?.message?.content;
-      if (!text) throw new Error('EMPTY_RESPONSE');
+      if (!text) {
+        // Log the full raw response so we can see what the model actually returned
+        // (finish_reason, usage, reasoning tokens, etc.) instead of a generic error.
+        console.error('[Groq] EMPTY_RESPONSE — full raw response:', JSON.stringify(response, null, 2));
+        throw new Error('EMPTY_RESPONSE');
+      }
 
       return { success: true, text: text.trim() };
 
