@@ -123,7 +123,7 @@ const Signup = () => {
                       <Icon size={15} />
                     </div>
                     <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</span>
-                    <Check size={14} className="ml-auto" style={{ color: 'var(--color-accent-sage)' }} />
+                    <Check size={14} className="ml-auto dark:text-primary-light" style={{ color: 'var(--color-accent-sage)' }} />
                   </div>
                 ))}
               </div>

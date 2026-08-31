@@ -386,7 +386,7 @@ const Dashboard = () => {
             AI Memory Companion is an emotionally intelligent space built to honor loved ones, preserve memories, and find comfort through safe, ethical AI. We blend technology with empathy to support your unique healing journey.
           </p>
           <Link to="/about" className="mt-auto">
-            <Button variant="secondary" size="sm" className="group">
+            <Button variant="outline" size="sm" className="group">
               Learn Our Story <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
@@ -419,7 +419,7 @@ const Dashboard = () => {
             Whether you have a question, feedback, or just need someone to talk to, our team is here for you. We read every message and respond with care and compassion within 24 hours.
           </p>
           <Link to="/contact" className="mt-auto">
-            <Button variant="secondary" size="sm" className="group">
+            <Button variant="outline" size="sm" className="group">
               Get in Touch <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>

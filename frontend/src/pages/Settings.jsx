@@ -31,11 +31,11 @@ const Toggle = ({ active, onChange, label }) => {
       <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>{label}</span>
       <div
         className="w-11 h-6 rounded-full p-0.5 transition-colors duration-200"
-        style={{ background: active ? 'var(--color-primary)' : 'var(--surface-soft)' }}
+        style={{ background: active ? 'var(--color-primary)' : '#a0a0ab' }}
       >
         <div
-          className={`w-5 h-5 rounded-full shadow-sm transition-transform duration-200 bg-slate-500 dark:bg-white ${active ? 'translate-x-5' : 'translate-x-0'}`}
-          style={{ background: active ? '#fff' : undefined }}
+          className={`w-5 h-5 rounded-full shadow-sm transition-transform duration-200 bg-white ${active ? 'translate-x-5' : 'translate-x-0'}`}
+          style={{}}
         />
       </div>
     </div>
