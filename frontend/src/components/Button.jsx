@@ -40,10 +40,12 @@ const Button = ({
     ].join(' '),
 
     secondary: [
-      'bg-white/6 hover:bg-white/10 text-white',
-      'border border-white/10 hover:border-white/25',
+      'bg-slate-900/5 hover:bg-slate-900/10 text-slate-900',
+      'dark:bg-white/6 dark:hover:bg-white/10 dark:text-white',
+      'border border-slate-900/10 hover:border-slate-900/20',
+      'dark:border-white/10 dark:hover:border-white/25',
       'backdrop-blur-md',
-      'hover:shadow-lg hover:shadow-black/20',
+      'hover:shadow-lg hover:shadow-slate-900/10 dark:hover:shadow-black/20',
     ].join(' '),
 
     outline: [
@@ -53,18 +55,19 @@ const Button = ({
     ].join(' '),
 
     ghost: [
-      'bg-transparent text-gray-400 hover:text-white',
-      'hover:bg-white/6',
+      'bg-transparent text-slate-500 hover:text-slate-900',
+      'dark:text-gray-400 dark:hover:text-white',
+      'hover:bg-slate-900/5 dark:hover:bg-white/6',
     ].join(' '),
 
     danger: [
-      'bg-red-500/10 hover:bg-red-500/20 text-red-400',
+      'bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400',
       'border border-red-500/20 hover:border-red-500/40',
     ].join(' '),
 
     glass: [
-      'glass-light text-white',
-      'border border-white/10 hover:border-primary/30',
+      'glass-light text-slate-900 dark:text-white',
+      'border border-slate-900/10 dark:border-white/10 hover:border-primary/30',
       'hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/10',
     ].join(' '),
   };

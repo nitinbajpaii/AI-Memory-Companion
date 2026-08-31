@@ -12,20 +12,34 @@ const StatCard = ({ label, value, icon: Icon, color, bg, trend }) => (
   <motion.div
     whileHover={{ y: -4, scale: 1.01 }}
     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-    className="glass-card rounded-3xl border border-white/6 p-6 hover:border-primary/20 transition-all duration-300"
+    className="glass-card rounded-3xl p-6 transition-all duration-300"
+    style={{ borderColor: 'var(--border-soft)' }}
   >
     <div className="flex items-start justify-between mb-4">
-      <div className={`w-12 h-12 ${bg} rounded-2xl flex items-center justify-center`}>
-        <Icon size={22} className={color} />
+      <div
+        className="w-12 h-12 rounded-2xl flex items-center justify-center"
+        style={bg ? { background: bg } : { background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)' }}
+      >
+        <Icon
+          size={22}
+          style={color ? { color } : { color: 'var(--color-primary)' }}
+        />
       </div>
       {trend && (
-        <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full">
+        <span
+          className="text-xs font-semibold px-2 py-1 rounded-full"
+          style={{
+            color: 'var(--color-accent-sage)',
+            background: 'color-mix(in srgb, var(--color-accent-sage) 12%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-accent-sage) 22%, transparent)',
+          }}
+        >
           {trend}
         </span>
       )}
     </div>
-    <p className="text-4xl font-black text-white mb-1">{value}</p>
-    <p className="text-sm text-gray-500 font-medium">{label}</p>
+    <p className="text-4xl font-black mb-1" style={{ color: 'var(--text-strong)' }}>{value}</p>
+    <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>{label}</p>
   </motion.div>
 );
 
@@ -54,19 +68,28 @@ const Dashboard = () => {
   }, [user._id]);
 
   const stats = [
-    { label: 'Total Memories',    value: memories.length || 0, icon: Heart,          color: 'text-pink-400',    bg: 'bg-pink-500/10',    trend: '+3 this week' },
-    { label: 'Conversations',     value: 12,                   icon: MessageCircle,   color: 'text-blue-400',    bg: 'bg-blue-500/10',    trend: '+2 today' },
-    { label: 'Days of Healing',   value: 24,                   icon: Calendar,        color: 'text-violet-400',  bg: 'bg-violet-500/10',  trend: 'Streak 🔥' },
-    { label: 'Healing Score',     value: '85%',                icon: TrendingUp,      color: 'text-emerald-400', bg: 'bg-emerald-500/10', trend: '+5%' },
+    { label: 'Total Memories',    value: memories.length || 0, icon: Heart,          color: 'var(--color-accent-rose)',  bg: 'color-mix(in srgb, var(--color-accent-rose) 12%, transparent)',  trend: '+3 this week' },
+    { label: 'Conversations',     value: 12,                   icon: MessageCircle,   color: 'color-mix(in srgb, var(--color-primary-dark) 70%, #6366f1 30%)', bg: 'color-mix(in srgb, var(--color-primary-dark) 10%, transparent)', trend: '+2 today' },
+    { label: 'Days of Healing',   value: 24,                   icon: Calendar,        color: 'var(--color-primary)',       bg: 'color-mix(in srgb, var(--color-primary) 12%, transparent)',       trend: 'Streak 🔥' },
+    { label: 'Healing Score',     value: '85%',                icon: TrendingUp,      color: 'var(--color-accent-sage)',  bg: 'color-mix(in srgb, var(--color-accent-sage) 12%, transparent)',  trend: '+5%' },
   ];
 
   const emotionColors = {
-    happy:      'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
-    sad:        'text-blue-400   bg-blue-500/10   border-blue-500/20',
-    nostalgic:  'text-amber-400  bg-amber-500/10  border-amber-500/20',
-    funny:      'text-green-400  bg-green-500/10  border-green-500/20',
-    meaningful: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-    comfort:    'text-pink-400   bg-pink-500/10   border-pink-500/20',
+    happy:      { c: 'var(--color-accent-amber)',                                          name: 'amber'    },
+    sad:        { c: 'color-mix(in srgb, var(--color-primary-dark) 70%, #6366f1 30%)',     name: 'indigo'   },
+    nostalgic:  { c: 'var(--color-accent-amber)',                                          name: 'amber'    },
+    funny:      { c: 'var(--color-accent-sage)',                                           name: 'sage'     },
+    meaningful: { c: 'var(--color-primary)',                                               name: 'primary'  },
+    comfort:    { c: 'var(--color-accent-rose)',                                           name: 'rose'     },
+  };
+
+  const emotionStyle = (tag) => {
+    const info = emotionColors[tag] || emotionColors.meaningful;
+    return {
+      color: info.c,
+      background: `color-mix(in srgb, ${info.c} 12%, transparent)`,
+      border: `1px solid color-mix(in srgb, ${info.c} 22%, transparent)`,
+    };
   };
 
   if (loading) {
@@ -74,7 +97,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-center h-full min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-gray-500">Loading your memories…</p>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading your memories…</p>
         </div>
       </div>
     );
@@ -100,12 +123,13 @@ const Dashboard = () => {
         <div className="min-w-0">
           <motion.h1
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            className="text-2xl xs:text-3xl md:text-4xl font-black text-white mb-1 truncate"
+            className="text-2xl xs:text-3xl md:text-4xl font-black mb-1 truncate"
+            style={{ color: 'var(--text-strong)' }}
           >
             {greeting}, {user?.name?.split(' ')[0]} {greetingEmoji}
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
-            className="text-gray-500 text-sm sm:text-base">
+            className="text-sm sm:text-base" style={{ color: 'var(--text-muted)' }}>
             Here's a look at your healing journey today.
           </motion.p>
         </div>
@@ -128,12 +152,21 @@ const Dashboard = () => {
       {/* ── Main Grid ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Recent Memories Feed */}
-        <div className="xl:col-span-2 glass-card rounded-3xl border border-white/6 p-6">
+        <div
+          className="xl:col-span-2 glass-card rounded-3xl p-6"
+          style={{ borderColor: 'var(--border-soft)' }}
+        >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Clock size={20} className="text-primary" /> Recent Memories
+            <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-strong)' }}>
+              <Clock size={20} style={{ color: 'var(--color-primary)' }} /> Recent Memories
             </h2>
-            <Link to="/memories" className="text-sm text-primary hover:text-primary-light transition-colors flex items-center gap-1">
+            <Link
+              to="/memories"
+              className="text-sm transition-colors flex items-center gap-1 hover:underline-offset-4"
+              style={{ color: 'var(--color-primary)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-light)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-primary)'; }}
+            >
               View all <ArrowRight size={14} />
             </Link>
           </div>
@@ -145,29 +178,53 @@ const Dashboard = () => {
                   key={memory._id || i}
                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + i * 0.07 }}
-                  className="flex items-start gap-4 p-4 rounded-2xl bg-white/3 hover:bg-white/6 border border-white/4 hover:border-primary/15 transition-all duration-200 cursor-pointer group"
+                  className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-200 cursor-pointer group"
+                  style={{
+                    background: 'var(--surface-overlay)',
+                    border: '1px solid var(--border-soft)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--surface-soft)';
+                    e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 18%, transparent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'var(--surface-overlay)';
+                    e.currentTarget.style.borderColor = 'var(--border-soft)';
+                  }}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:scale-110 transition-transform">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
+                    style={{
+                      background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                      color: 'var(--color-primary)',
+                    }}
+                  >
                     <Heart size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-gray-200 text-sm font-medium leading-relaxed line-clamp-2">{memory.memoryText}</p>
+                    <p className="text-sm font-medium leading-relaxed line-clamp-2" style={{ color: 'var(--text-strong)' }}>{memory.memoryText}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${emotionColors[memory.emotionTag] || emotionColors.meaningful}`}>
+                      <span
+                        className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                        style={emotionStyle(memory.emotionTag)}
+                      >
                         {memory.emotionTag}
                       </span>
-                      <span className="text-xs text-gray-600">{new Date(memory.createdAt).toLocaleDateString()}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-subtle)' }}>{new Date(memory.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </motion.div>
               ))
             ) : (
               <div className="text-center py-16">
-                <div className="w-16 h-16 rounded-3xl bg-white/4 flex items-center justify-center mx-auto mb-4">
-                  <Heart size={28} className="text-gray-600" />
+                <div
+                  className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'var(--surface-overlay)' }}
+                >
+                  <Heart size={28} style={{ color: 'var(--text-subtle)' }} />
                 </div>
-                <h4 className="text-lg font-bold text-gray-400 mb-2">No memories yet</h4>
-                <p className="text-gray-600 text-sm mb-6">Start by adding your first cherished memory.</p>
+                <h4 className="text-lg font-bold mb-2" style={{ color: 'var(--text-muted)' }}>No memories yet</h4>
+                <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Start by adding your first cherished memory.</p>
                 <Link to="/memories">
                   <Button variant="outline" size="sm">Add First Memory</Button>
                 </Link>
@@ -179,9 +236,15 @@ const Dashboard = () => {
         {/* Right Sidebar Cards */}
         <div className="space-y-5">
           {/* Loved One Profile Card */}
-          <div className="glass-card rounded-3xl border border-white/6 p-6 bg-gradient-to-br from-primary/5 to-transparent">
-            <h3 className="text-base font-bold text-white mb-5 flex items-center gap-2">
-              <Sparkles size={16} className="text-primary" /> Loved One
+          <div
+            className="glass-card rounded-3xl p-6"
+            style={{
+              borderColor: 'var(--border-soft)',
+              background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 5%, transparent) 0%, var(--glass-bg) 100%)',
+            }}
+          >
+            <h3 className="text-base font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--text-strong)' }}>
+              <Sparkles size={16} style={{ color: 'var(--color-primary)' }} /> Loved One
             </h3>
             {profile ? (
               <div className="space-y-5">
@@ -190,39 +253,65 @@ const Dashboard = () => {
                     {profile.name[0]}
                   </div>
                   <div>
-                    <p className="font-bold text-white">{profile.name}</p>
-                    <p className="text-sm text-gray-500">{profile.relation}</p>
+                    <p className="font-bold" style={{ color: 'var(--text-strong)' }}>{profile.name}</p>
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{profile.relation}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 text-sm text-gray-400 bg-white/4 rounded-xl p-3">
-                  <BookOpen size={14} className="text-primary mt-0.5 shrink-0" />
+                <div
+                  className="flex items-start gap-2 text-sm rounded-xl p-3"
+                  style={{
+                    background: 'var(--surface-overlay)',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <BookOpen size={14} style={{ color: 'var(--color-primary)' }} className="mt-0.5 shrink-0" />
                   <span className="line-clamp-2">{profile.personality}</span>
                 </div>
                 <Link to="/profile"><Button variant="outline" size="sm" className="w-full">View Profile</Button></Link>
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-gray-500 text-sm mb-4">No profile yet. Create one to start chatting.</p>
+                <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No profile yet. Create one to start chatting.</p>
                 <Link to="/profile"><Button size="sm" className="w-full">Create Profile</Button></Link>
               </div>
             )}
           </div>
 
           {/* Quick Actions */}
-          <div className="glass-card rounded-3xl border border-white/6 p-6">
-            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-              <Zap size={16} className="text-amber-400" /> Quick Actions
+          <div
+            className="glass-card rounded-3xl p-6"
+            style={{ borderColor: 'var(--border-soft)' }}
+          >
+            <h3 className="text-base font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-strong)' }}>
+              <Zap size={16} style={{ color: 'var(--color-accent-amber)' }} /> Quick Actions
             </h3>
             <div className="space-y-2">
               {[
-                { label: 'Start a conversation', path: '/chat', icon: MessageCircle, color: 'text-blue-400' },
-                { label: 'Add a memory',          path: '/memories', icon: Heart, color: 'text-pink-400' },
-                { label: 'Update profile',         path: '/profile', icon: BookOpen, color: 'text-violet-400' },
+                { label: 'Start a conversation', path: '/chat',     icon: MessageCircle, color: 'color-mix(in srgb, var(--color-primary-dark) 70%, #6366f1 30%)' },
+                { label: 'Add a memory',          path: '/memories', icon: Heart,         color: 'var(--color-accent-rose)' },
+                { label: 'Update profile',         path: '/profile',  icon: BookOpen,      color: 'var(--color-primary)' },
               ].map(({ label, path, icon: Icon, color }) => (
-                <Link key={path} to={path}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/3 hover:bg-white/6 border border-white/4 hover:border-primary/15 transition-all text-sm text-gray-400 hover:text-white group"
+                <Link
+                  key={path}
+                  to={path}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm group"
+                  style={{
+                    background: 'var(--surface-overlay)',
+                    border: '1px solid var(--border-soft)',
+                    color: 'var(--text-muted)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--surface-soft)';
+                    e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 18%, transparent)';
+                    e.currentTarget.style.color = 'var(--text-strong)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'var(--surface-overlay)';
+                    e.currentTarget.style.borderColor = 'var(--border-soft)';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                  }}
                 >
-                  <Icon size={15} className={color} />
+                  <Icon size={15} style={{ color }} />
                   {label}
                   <ArrowRight size={12} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Link>
@@ -231,9 +320,12 @@ const Dashboard = () => {
           </div>
 
           {/* Healing Tips */}
-          <div className="glass-card rounded-3xl border border-white/6 p-6">
-            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-              <Activity size={16} className="text-emerald-400" /> Daily Healing
+          <div
+            className="glass-card rounded-3xl p-6"
+            style={{ borderColor: 'var(--border-soft)' }}
+          >
+            <h3 className="text-base font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-strong)' }}>
+              <Activity size={16} style={{ color: 'var(--color-accent-sage)' }} /> Daily Healing
             </h3>
             <div className="space-y-3">
               {[
@@ -242,9 +334,18 @@ const Dashboard = () => {
                 "Listen to a song that reminds you of them.",
                 "Share a memory in the chat.",
               ].map((tip, i) => (
-                <div key={i} className="flex items-start gap-3 text-sm text-gray-500 hover:text-gray-300 transition-colors cursor-default">
-                  <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-[10px] font-bold text-primary">{i + 1}</span>
+                <div
+                  key={i}
+                  className="flex items-start gap-3 text-sm transition-colors cursor-default"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-strong)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+                >
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    style={{ background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)' }}
+                  >
+                    <span className="text-[10px] font-bold" style={{ color: 'var(--color-primary)' }}>{i + 1}</span>
                   </div>
                   {tip}
                 </div>
@@ -255,21 +356,33 @@ const Dashboard = () => {
       </div>
 
       {/* ── Dashboard Footer: About & Contact ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-10 mt-10 border-t border-white/5">
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-10 mt-10 border-t"
+        style={{ borderColor: 'var(--border-soft)' }}
+      >
         {/* About Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="glass-card rounded-3xl border border-white/6 p-8 flex flex-col gap-5 hover:border-primary/20 transition-all duration-300"
+          className="glass-card rounded-3xl p-8 flex flex-col gap-5 transition-all duration-300"
+          style={{ borderColor: 'var(--border-soft)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 22%, transparent)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-soft)'; }}
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shadow-lg shadow-primary/5">
-              <Info size={22} className="text-primary" />
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center"
+              style={{
+                background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                boxShadow: '0 10px 30px color-mix(in srgb, var(--color-primary) 8%, transparent)',
+              }}
+            >
+              <Info size={22} style={{ color: 'var(--color-primary)' }} />
             </div>
-            <h2 className="text-xl font-black text-white">About Us</h2>
+            <h2 className="text-xl font-black" style={{ color: 'var(--text-strong)' }}>About Us</h2>
           </div>
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
             AI Memory Companion is an emotionally intelligent space built to honor loved ones, preserve memories, and find comfort through safe, ethical AI. We blend technology with empathy to support your unique healing journey.
           </p>
           <Link to="/about" className="mt-auto">
@@ -285,15 +398,24 @@ const Dashboard = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
-          className="glass-card rounded-3xl border border-white/6 p-8 flex flex-col gap-5 hover:border-primary/20 transition-all duration-300"
+          className="glass-card rounded-3xl p-8 flex flex-col gap-5 transition-all duration-300"
+          style={{ borderColor: 'var(--border-soft)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-primary) 22%, transparent)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-soft)'; }}
         >
           <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shadow-lg shadow-emerald-500/5`}>
-              <Mail size={22} className="text-emerald-400" />
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center"
+              style={{
+                background: 'color-mix(in srgb, var(--color-accent-sage) 10%, transparent)',
+                boxShadow: '0 10px 30px color-mix(in srgb, var(--color-accent-sage) 8%, transparent)',
+              }}
+            >
+              <Mail size={22} style={{ color: 'var(--color-accent-sage)' }} />
             </div>
-            <h2 className="text-xl font-black text-white">Contact Us</h2>
+            <h2 className="text-xl font-black" style={{ color: 'var(--text-strong)' }}>Contact Us</h2>
           </div>
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
             Whether you have a question, feedback, or just need someone to talk to, our team is here for you. We read every message and respond with care and compassion within 24 hours.
           </p>
           <Link to="/contact" className="mt-auto">

@@ -21,6 +21,12 @@ async function getAIResponse(prompt) {
     try {
       console.log('[Groq] Request sent:', prompt.slice(0, 100));
 
+      // NOTE: llama-3.1-8b-instant is used globally. For Hindi/Hinglish conversations specifically,
+      // consider switching to 'llama-3.3-70b-versatile' — the larger model has far better Hindi
+      // grammar (gender agreement, case markers, verb conjugation) and produces noticeably fewer
+      // slips like "mere pyara dost" vs correct "mera pyara dost". English conversations can stay
+      // on 8b-instant for speed/cost savings.
+
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],

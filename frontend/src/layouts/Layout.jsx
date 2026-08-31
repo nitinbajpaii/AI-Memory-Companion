@@ -8,7 +8,10 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-dark text-white overflow-hidden">
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{ background: 'var(--surface-bg)', color: 'var(--text-strong)' }}
+    >
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content */}

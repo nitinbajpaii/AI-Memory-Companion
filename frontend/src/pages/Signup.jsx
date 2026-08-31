@@ -4,22 +4,24 @@ import { motion } from 'framer-motion';
 import { Heart, Mail, Lock, User, ArrowRight, Eye, EyeOff, Check, Sparkles, Shield, Brain } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import ThemeToggle from '../components/ThemeToggle';
+import { useTheme } from '../contexts/ThemeContext';
 import { authAPI } from '../services/api';
 
 const strengthLevels = [
-  { min: 0, label: '', color: '' },
-  { min: 1, label: 'Weak',     color: 'bg-red-500' },
-  { min: 2, label: 'Fair',     color: 'bg-amber-500' },
-  { min: 3, label: 'Good',     color: 'bg-yellow-400' },
-  { min: 4, label: 'Strong',   color: 'bg-emerald-500' },
+  { min: 0, label: '',       color: 'transparent' },
+  { min: 1, label: 'Weak',   color: '#ef4444' },
+  { min: 2, label: 'Fair',   color: '#f59e0b' },
+  { min: 3, label: 'Good',   color: '#facc15' },
+  { min: 4, label: 'Strong', color: '#10b981' },
 ];
 
 const getStrength = (pw) => {
   let s = 0;
-  if (pw.length >= 8)               s++;
-  if (/[A-Z]/.test(pw))            s++;
-  if (/[0-9]/.test(pw))            s++;
-  if (/[^A-Za-z0-9]/.test(pw))    s++;
+  if (pw.length >= 8)                s++;
+  if (/[A-Z]/.test(pw))             s++;
+  if (/[0-9]/.test(pw))             s++;
+  if (/[^A-Za-z0-9]/.test(pw))     s++;
   return s;
 };
 
@@ -37,10 +39,13 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError]             = useState('');
   const [loading, setLoading]         = useState(false);
-  const navigate                      = useNavigate();
+  const { reducedMotion } = useTheme();
+  const navigate = useNavigate();
 
   const strength = getStrength(password);
   const strengthInfo = strengthLevels[strength] || strengthLevels[0];
+
+  const motionT = reducedMotion ? { duration: 0.01 } : { delay: 0.2, duration: 0.5 };
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -58,37 +63,67 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark flex overflow-hidden">
+    <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--surface-bg)' }}>
       {/* ── LEFT PANEL ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-dark-lighter via-dark to-dark-lighter shrink-0">
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-primary/20 blur-[100px] rounded-full" />
-        <div className="absolute bottom-1/4 left-1/4 w-60 h-60 bg-indigo/15 blur-[80px] rounded-full" />
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden shrink-0"
+        style={{
+          background:
+            'linear-gradient(135deg, color-mix(in srgb, var(--surface-elev) 60%, transparent) 0%, var(--surface-bg) 50%, color-mix(in srgb, var(--surface-elev) 60%, transparent) 100%)',
+        }}
+      >
+        <div
+          className="absolute top-1/3 right-1/4 w-80 h-80 rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle at center, color-mix(in srgb, var(--color-primary) 22%, transparent) 0%, transparent 70%)',
+            filter: 'blur(48px)',
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 left-1/4 w-60 h-60 rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle at center, color-mix(in srgb, var(--color-accent-rose) 20%, transparent) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
 
         <div className="relative z-10 flex flex-col justify-between p-10 xl:p-14 w-full">
-          <Link to="/" className="flex items-center gap-2.5 w-fit">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
-              <Heart size={18} className="text-white fill-white" />
-            </div>
-            <span className="font-bold text-base gradient-text">AI Memory Companion</span>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2.5 w-fit">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/25">
+                <Heart size={18} className="text-white fill-white" />
+              </div>
+              <span className="font-bold text-base gradient-text">AI Memory Companion</span>
+            </Link>
+            <ThemeToggle size="md" />
+          </div>
 
           <div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <h2 className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4">
-                Honor those who<br />live in your <span className="gradient-text">heart</span>.
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={motionT}>
+              <h2 className="text-3xl xl:text-4xl font-black leading-tight mb-4" style={{ color: 'var(--text-strong)' }}>
+                Honor those who<br />live in your <span className="gradient-text-warm">heart</span>.
               </h2>
-              <p className="text-gray-500 text-sm mb-10 leading-relaxed max-w-sm">
+              <p className="text-sm mb-10 leading-relaxed max-w-sm" style={{ color: 'var(--text-muted)' }}>
                 Create your free account and start preserving beautiful memories today.
               </p>
 
               <div className="flex flex-col gap-4">
                 {perks.map(({ icon: Icon, label }) => (
                   <div key={label} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                      <Icon size={15} className="text-primary" />
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)',
+                        color: 'var(--color-primary)',
+                      }}
+                    >
+                      <Icon size={15} />
                     </div>
-                    <span className="text-sm text-gray-300">{label}</span>
-                    <Check size={14} className="text-emerald-500 ml-auto" />
+                    <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</span>
+                    <Check size={14} className="ml-auto" style={{ color: 'var(--color-accent-sage)' }} />
                   </div>
                 ))}
               </div>
@@ -103,9 +138,13 @@ const Signup = () => {
               { value: '99.9%', label: 'Uptime' },
               { value: 'Free',  label: 'Forever plan' },
             ].map(({ value, label }) => (
-              <div key={label} className="glass-card rounded-2xl border border-white/6 p-4 text-center">
+              <div
+                key={label}
+                className="glass-card rounded-2xl p-4 text-center"
+                style={{ border: '1px solid var(--border-soft)' }}
+              >
                 <p className="text-xl font-black gradient-text mb-1">{value}</p>
-                <p className="text-xs text-gray-500">{label}</p>
+                <p className="text-xs" style={{ color: 'var(--text-subtle)' }}>{label}</p>
               </div>
             ))}
           </div>
@@ -114,32 +153,52 @@ const Signup = () => {
 
       {/* ── RIGHT PANEL ── */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative overflow-y-auto">
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo/8 blur-[120px] rounded-full pointer-events-none" />
+        <div
+          className="absolute bottom-0 left-0 w-96 h-96 rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle at center, color-mix(in srgb, var(--color-primary) 10%, transparent) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+          }}
+        />
 
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={reducedMotion ? { duration: 0.01 } : { duration: 0.5 }}
           className="w-full max-w-md relative z-10 py-8"
         >
-          <Link to="/" className="lg:hidden flex items-center gap-2.5 mb-8 w-fit">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center">
-              <Heart size={16} className="text-white fill-white" />
-            </div>
-            <span className="font-bold gradient-text">AI Memory Companion</span>
-          </Link>
+          <div className="lg:hidden flex items-center justify-between mb-8">
+            <Link to="/" className="flex items-center gap-2.5 w-fit">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-md shadow-primary/20">
+                <Heart size={16} className="text-white fill-white" />
+              </div>
+              <span className="font-bold gradient-text">AI Memory Companion</span>
+            </Link>
+            <ThemeToggle size="sm" />
+          </div>
 
           <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">Create your account</h1>
-            <p className="text-gray-500 text-sm sm:text-base">Begin your healing journey. Free forever.</p>
+            <h1 className="text-2xl sm:text-3xl font-black mb-2" style={{ color: 'var(--text-strong)' }}>
+              Create your account
+            </h1>
+            <p className="text-sm sm:text-base" style={{ color: 'var(--text-muted)' }}>
+              Begin your healing journey. Free forever.
+            </p>
           </div>
 
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              className="bg-red-500/8 border border-red-500/20 text-red-400 text-sm p-4 rounded-2xl mb-6 flex items-center gap-3"
+              transition={reducedMotion ? { duration: 0.01 } : { duration: 0.25 }}
+              className="text-sm p-4 rounded-2xl mb-6 flex items-center gap-3"
+              style={{
+                background: 'color-mix(in srgb, #ef4444 8%, transparent)',
+                border: '1px solid color-mix(in srgb, #ef4444 20%, transparent)',
+                color: 'color-mix(in srgb, #e14b4b 40%, var(--text-strong) 60%)',
+              }}
             >
-              <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: '#ef4444' }} />
               {error}
             </motion.div>
           )}
@@ -179,7 +238,10 @@ const Signup = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-gray-500 hover:text-white transition-colors"
+                    className="transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-strong)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -192,13 +254,19 @@ const Signup = () => {
                     {[1, 2, 3, 4].map((level) => (
                       <div
                         key={level}
-                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${strength >= level ? strengthInfo.color : 'bg-white/10'}`}
+                        className="h-1 flex-1 rounded-full transition-all duration-300"
+                        style={{
+                          background: strength >= level ? strengthInfo.color : 'var(--border-soft)',
+                        }}
                       />
                     ))}
                   </div>
                   {strengthInfo.label && (
-                    <p className="text-[10px] text-gray-500">
-                      Strength: <span className={`font-bold ${strengthInfo.color.replace('bg-', 'text-')}`}>{strengthInfo.label}</span>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                      Strength:{' '}
+                      <span className="font-bold" style={{ color: strengthInfo.color }}>
+                        {strengthInfo.label}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -209,7 +277,7 @@ const Signup = () => {
               type="submit"
               size="lg"
               loading={loading}
-              className="w-full shadow-lg shadow-primary/20 mt-4"
+              className="w-full shadow-lg shadow-primary/15 mt-4"
             >
               {!loading && (
                 <>Sign Up <ArrowRight size={18} /></>
@@ -217,17 +285,24 @@ const Signup = () => {
             </Button>
           </form>
 
-          <p className="text-center mt-8 text-sm text-gray-500">
+          <p className="text-center mt-8 text-sm" style={{ color: 'var(--text-muted)' }}>
             Already have an account?{' '}
-            <Link to="/login" className="text-primary font-semibold hover:text-primary-light transition-colors">
+            <Link
+              to="/login"
+              className="font-semibold transition-colors"
+              style={{ color: 'var(--color-primary)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-light)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
+            >
               Sign in
             </Link>
           </p>
 
-          <p className="text-center mt-6 text-[11px] text-gray-700 max-w-xs mx-auto">
+          <p className="text-center mt-6 text-[11px] max-w-xs mx-auto" style={{ color: 'var(--text-muted)' }}>
             By signing up, you agree to our{' '}
-            <a href="#" className="underline hover:text-gray-500">Terms</a> and{' '}
-            <a href="#" className="underline hover:text-gray-500">Privacy Policy</a>.
+            <a href="#" className="underline" style={{ color: 'var(--text-strong)' }}>Terms</a>
+            {' '}and{' '}
+            <a href="#" className="underline" style={{ color: 'var(--text-strong)' }}>Privacy Policy</a>.
           </p>
         </motion.div>
       </div>

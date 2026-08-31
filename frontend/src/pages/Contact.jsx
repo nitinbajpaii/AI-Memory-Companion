@@ -9,56 +9,48 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Footer from '../components/Footer';
 import ProfileDropdown from '../components/ProfileDropdown';
+import { useTheme } from '../contexts/ThemeContext';
 
-/* ── Data ── */
+const contactColors = {
+  primary: 'var(--color-primary)',
+  sage: 'var(--color-accent-sage)',
+  blue: '#60a5fa',
+  rose: 'var(--color-accent-rose)',
+  amber: 'var(--color-accent-amber)',
+};
+
 const contactInfo = [
   {
     icon: Mail,
     label: 'Email Us',
     value: 'support.aimemorycompanion@gmail.com',
     sub: 'We reply within 24 hours',
-    color: 'text-violet-400',
-    bg: 'bg-violet-500/10',
-    border: 'border-violet-500/20',
+    color: contactColors.primary,
   },
   {
     icon: Clock,
     label: 'Support Hours',
     value: 'Monday – Saturday',
     sub: '9 AM – 8 PM IST',
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/20',
+    color: contactColors.sage,
   },
   {
     icon: MessageSquare,
     label: 'Live Chat',
     value: 'Real-time in-app chat',
     sub: 'Available for Pro users',
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/20',
+    color: contactColors.blue,
   },
 ];
 
 const faqs = [
-  {
-    q: 'Is my data safe?',
-    a: 'All data is encrypted end-to-end and stored on secure servers. You can delete everything at any time.'
-  },
-  {
-    q: 'Can I cancel anytime?',
-    a: 'Yes, cancel your subscription anytime with no questions asked and no hidden fees.'
-  },
-  {
-    q: 'Is the AI voice realistic?',
-    a: 'We use ElevenLabs — one of the most realistic voice AI providers — to generate warm, natural-sounding replies.'
-  },
+  { q: 'Is my data safe?', a: 'All data is encrypted end-to-end and stored on secure servers. You can delete everything at any time.' },
+  { q: 'Can I cancel anytime?', a: 'Yes, cancel your subscription anytime with no questions asked and no hidden fees.' },
+  { q: 'Is the AI voice realistic?', a: 'We use ElevenLabs — one of the most realistic voice AI providers — to generate warm, natural-sounding replies.' },
 ];
 
 /* ── Mini Nav ── */
 const MiniNav = () => {
-  // Robust check for user session
   const userStr = localStorage.getItem('user');
   let user = null;
   try {
@@ -70,7 +62,10 @@ const MiniNav = () => {
   }
 
   return (
-    <nav className="glass-dark border-b border-white/6 px-8 py-4 flex items-center justify-between sticky top-0 z-20">
+    <nav
+      className="glass-dark border-b px-8 py-4 flex items-center justify-between sticky top-0 z-20"
+      style={{ borderColor: 'var(--border-soft)' }}
+    >
       <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
         <motion.div
           whileHover={{ scale: 1.1, rotate: -6 }}
@@ -90,7 +85,10 @@ const MiniNav = () => {
           <>
             <Link
               to="/login"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
+              className="text-sm transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-strong)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
             >
               Login
             </Link>
@@ -106,13 +104,8 @@ const MiniNav = () => {
 
 /* ── Contact Page ── */
 const Contact = () => {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
-
+  const { reducedMotion } = useTheme();
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -146,12 +139,7 @@ const Contact = () => {
 
       if (result.success) {
         setSuccess(true);
-        setForm({
-          name: '',
-          email: '',
-          subject: '',
-          message: ''
-        });
+        setForm({ name: '', email: '', subject: '', message: '' });
       } else {
         setError(result.message || 'Failed to send message.');
       }
@@ -163,29 +151,45 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark text-white overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--surface-bg)' }}>
       <MiniNav />
 
       {/* Hero */}
       <section className="pt-16 sm:pt-20 pb-10 sm:pb-12 px-6 text-center relative overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-10 right-1/4 w-64 h-64 bg-indigo/6 rounded-full blur-3xl pointer-events-none" />
+        <div
+          className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'color-mix(in srgb, var(--color-primary) 8%, transparent)' }}
+        />
+        <div
+          className="absolute top-10 right-1/4 w-64 h-64 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'color-mix(in srgb, var(--color-primary-dark) 6%, transparent)' }}
+        />
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={reducedMotion ? {} : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="relative z-10 max-w-2xl mx-auto"
         >
-          <span className="inline-flex px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-6">
+          <span
+            className="inline-flex px-4 py-1.5 rounded-full border text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-6"
+            style={{
+              background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+              color: 'var(--color-primary)',
+            }}
+          >
             Get in Touch
           </span>
 
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black mb-5 leading-tight">
+          <h1
+            className="text-3xl sm:text-4xl md:text-6xl font-black mb-5 leading-tight"
+            style={{ color: 'var(--text-strong)' }}
+          >
             We're Here to <span className="gradient-text">Listen</span>
           </h1>
 
-          <p className="text-gray-400 text-base sm:text-lg leading-relaxed px-4">
+          <p className="text-base sm:text-lg leading-relaxed px-4" style={{ color: 'var(--text-muted)' }}>
             Whether you have a question, feedback, or just need support.
           </p>
         </motion.div>
@@ -197,24 +201,33 @@ const Contact = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
           {contactInfo.map((c, i) => {
             const Icon = c.icon;
-
             return (
               <div
                 key={i}
-                className={`glass-card rounded-2xl sm:rounded-3xl border ${c.border} p-6 sm:p-7 flex flex-row sm:flex-col items-center sm:items-start gap-4 sm:gap-0`}
+                className="glass-card rounded-2xl sm:rounded-3xl border p-6 sm:p-7 flex flex-row sm:flex-col items-center sm:items-start gap-4 sm:gap-0"
+                style={{ borderColor: `color-mix(in srgb, ${c.color} 20%, transparent)` }}
               >
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${c.bg} flex items-center justify-center shrink-0`}>
-                  <Icon size={20} className={c.color} />
+                <div
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: `color-mix(in srgb, ${c.color} 10%, transparent)` }}
+                >
+                  <Icon size={20} style={{ color: c.color }} />
                 </div>
 
                 <div className="sm:mt-4 min-w-0">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-widest"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
                     {c.label}
                   </p>
-                  <p className="font-bold text-white text-xs sm:text-sm mt-0.5 sm:mt-1 truncate">
+                  <p
+                    className="font-bold text-xs sm:text-sm mt-0.5 sm:mt-1 truncate"
+                    style={{ color: 'var(--text-strong)' }}
+                  >
                     {c.value}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">
+                  <p className="text-[10px] sm:text-xs mt-0.5 sm:mt-1" style={{ color: 'var(--text-muted)' }}>
                     {c.sub}
                   </p>
                 </div>
@@ -227,17 +240,26 @@ const Contact = () => {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
 
           {/* Form */}
-          <div className="lg:col-span-3 glass-card rounded-2xl sm:rounded-3xl border border-white/8 p-6 sm:p-10">
+          <div
+            className="lg:col-span-3 glass-card rounded-2xl sm:rounded-3xl border p-6 sm:p-10"
+            style={{ borderColor: 'var(--border-soft)' }}
+          >
             <div className="flex items-center gap-3 mb-8 sm:mb-10">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-primary/12 border border-primary/20 flex items-center justify-center">
-                <Send size={18} className="text-primary" />
+              <div
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl border flex items-center justify-center"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-primary) 12%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+                }}
+              >
+                <Send size={18} style={{ color: 'var(--color-primary)' }} />
               </div>
 
               <div>
-                <h2 className="text-lg sm:text-xl font-black text-white">
+                <h2 className="text-lg sm:text-xl font-black" style={{ color: 'var(--text-strong)' }}>
                   Send a Message
                 </h2>
-                <p className="text-xs sm:text-sm text-gray-500">
+                <p className="text-xs sm:text-sm" style={{ color: 'var(--text-muted)' }}>
                   We read every message personally.
                 </p>
               </div>
@@ -246,11 +268,11 @@ const Contact = () => {
             <AnimatePresence mode="wait">
               {success ? (
                 <div className="flex flex-col items-center gap-5 py-12 sm:py-16 text-center">
-                  <CheckCircle2 size={36} className="text-emerald-400" />
-                  <h3 className="text-xl sm:text-2xl font-black text-white">
+                  <CheckCircle2 size={36} style={{ color: contactColors.sage }} />
+                  <h3 className="text-xl sm:text-2xl font-black" style={{ color: 'var(--text-strong)' }}>
                     Message Sent!
                   </h3>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                     Thank you for reaching out.
                   </p>
                 </div>
@@ -258,7 +280,14 @@ const Contact = () => {
                 <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
 
                   {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs sm:text-sm p-3 rounded-xl">
+                    <div
+                      className="border text-xs sm:text-sm p-3 rounded-xl"
+                      style={{
+                        background: 'color-mix(in srgb, #dc2626 10%, transparent)',
+                        borderColor: 'color-mix(in srgb, #dc2626 20%, transparent)',
+                        color: 'color-mix(in srgb, #b91c1c 40%, var(--text-strong) 60%)',
+                      }}
+                    >
                       {error}
                     </div>
                   )}
@@ -267,19 +296,14 @@ const Contact = () => {
                     <Input
                       label="Your Name"
                       value={form.name}
-                      onChange={(e) =>
-                        setForm({ ...form, name: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
                       required
                     />
-
                     <Input
                       label="Email Address"
                       type="email"
                       value={form.email}
-                      onChange={(e) =>
-                        setForm({ ...form, email: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
                       required
                     />
                   </div>
@@ -287,21 +311,33 @@ const Contact = () => {
                   <Input
                     label="Subject"
                     value={form.subject}
-                    onChange={(e) =>
-                      setForm({ ...form, subject: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
                   />
 
                   <div className="space-y-2">
-                    <label className="text-xs sm:text-sm font-bold text-gray-400 ml-1">Your Message</label>
+                    <label
+                      className="text-xs sm:text-sm font-bold ml-1"
+                      style={{ color: 'var(--text-muted)' }}
+                    >Your Message</label>
                     <textarea
                       rows={5}
                       placeholder="Share what's on your mind..."
                       value={form.message}
-                      onChange={(e) =>
-                        setForm({ ...form, message: e.target.value })
-                      }
-                      className="w-full rounded-xl sm:rounded-2xl bg-white/5 border border-white/8 text-white px-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      className="form-input w-full rounded-xl sm:rounded-2xl border px-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 transition-all"
+                      style={{
+                        background: 'var(--surface-overlay)',
+                        borderColor: 'var(--border-soft)',
+                        color: 'var(--text-strong)',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'color-mix(in srgb, var(--color-primary) 30%, transparent)';
+                        e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-soft)';
+                        e.target.style.boxShadow = 'none';
+                      }}
                       required
                     />
                   </div>
@@ -322,38 +358,62 @@ const Contact = () => {
 
           {/* FAQ */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/8 p-6 sm:p-7">
+            <div
+              className="glass-card rounded-2xl sm:rounded-3xl border p-6 sm:p-7"
+              style={{ borderColor: 'var(--border-soft)' }}
+            >
               <div className="flex items-center gap-2.5 mb-6 sm:mb-8">
-                <Sparkles size={18} className="text-primary" />
-                <h3 className="font-black text-white text-base sm:text-lg">
+                <Sparkles size={18} style={{ color: 'var(--color-primary)' }} />
+                <h3 className="font-black text-base sm:text-lg" style={{ color: 'var(--text-strong)' }}>
                   Quick Answers
                 </h3>
               </div>
 
               <div className="space-y-3 sm:space-y-4">
                 {faqs.map((faq, i) => (
-                  <div key={i} className="border-b border-white/5 last:border-0 pb-3 sm:pb-4 last:pb-0">
+                  <div
+                    key={i}
+                    className="border-b last:border-0 pb-3 sm:pb-4 last:pb-0"
+                    style={{ borderColor: 'var(--border-soft)' }}
+                  >
                     <button
-                      onClick={() =>
-                        setOpenFaq(openFaq === i ? null : i)
-                      }
+                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
                       className="w-full text-left flex items-center justify-between group"
                     >
-                      <span className={`text-xs sm:text-sm font-bold transition-colors ${openFaq === i ? 'text-primary' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                      <span
+                        className="text-xs sm:text-sm font-bold transition-colors"
+                        style={{ color: openFaq === i ? 'var(--color-primary)' : 'var(--text-muted)' }}
+                        onMouseEnter={(e) => {
+                          if (openFaq !== i) e.currentTarget.style.color = 'var(--text-strong)';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (openFaq !== i) e.currentTarget.style.color = 'var(--text-muted)';
+                        }}
+                      >
                         {faq.q}
                       </span>
-                      <ChevronRight size={14} className={`text-gray-600 transition-transform ${openFaq === i ? 'rotate-90 text-primary' : ''}`} />
+                      <ChevronRight
+                        size={14}
+                        className={`transition-transform`}
+                        style={{
+                          transform: openFaq === i ? 'rotate(90deg)' : 'rotate(0)',
+                          color: openFaq === i ? 'var(--color-primary)' : 'var(--text-subtle)',
+                        }}
+                      />
                     </button>
 
                     <AnimatePresence>
                       {openFaq === i && (
                         <motion.div
-                          initial={{ height: 0, opacity: 0 }}
+                          initial={reducedMotion ? {} : { height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
+                          exit={reducedMotion ? {} : { height: 0, opacity: 0 }}
                           className="overflow-hidden"
                         >
-                          <p className="text-[11px] sm:text-xs text-gray-500 mt-2.5 sm:mt-3 leading-relaxed">
+                          <p
+                            className="text-[11px] sm:text-xs mt-2.5 sm:mt-3 leading-relaxed"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
                             {faq.a}
                           </p>
                         </motion.div>

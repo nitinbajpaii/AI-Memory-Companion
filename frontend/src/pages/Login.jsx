@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Mail, Lock, ArrowRight, Eye, EyeOff, Shield, Star, Sparkles } from 'lucide-react';
+import { Heart, Mail, Lock, ArrowRight, Eye, EyeOff, Shield, Star, Sparkles, Sun, Moon } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import ThemeToggle from '../components/ThemeToggle';
+import { useTheme } from '../contexts/ThemeContext';
 import { authAPI } from '../services/api';
 
 const Login = () => {
@@ -12,7 +14,10 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError]             = useState('');
   const [loading, setLoading]         = useState(false);
+  const { reducedMotion } = useTheme();
   const navigate = useNavigate();
+
+  const motionT = reducedMotion ? { duration: 0.01 } : { delay: 0.2, duration: 0.6 };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,34 +35,60 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark flex overflow-hidden">
+    <div className="min-h-screen flex overflow-hidden" style={{ background: 'var(--surface-bg)' }}>
       {/* ── LEFT PANEL ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-dark-lighter via-dark to-dark-lighter shrink-0">
-        {/* Glow blobs */}
-        <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-primary/20 blur-[100px] rounded-full" />
-        <div className="absolute bottom-1/4 right-1/4 w-60 h-60 bg-indigo/15 blur-[80px] rounded-full" />
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden shrink-0"
+        style={{
+          background:
+            'linear-gradient(135deg, color-mix(in srgb, var(--surface-elev) 60%, transparent) 0%, var(--surface-bg) 50%, color-mix(in srgb, var(--surface-elev) 60%, transparent) 100%)',
+        }}
+      >
+        {/* Hero mesh globs (var based) */}
+        <div
+          className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle at center, color-mix(in srgb, var(--color-primary) 22%, transparent) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 right-1/4 w-60 h-60 rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle at center, color-mix(in srgb, var(--color-accent-rose) 22%, transparent) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
 
         <div className="relative z-10 flex flex-col justify-between p-10 xl:p-14 w-full">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 w-fit">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/30">
-              <Heart size={18} className="text-white fill-white" />
-            </div>
-            <span className="font-bold text-base gradient-text">AI Memory Companion</span>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2.5 w-fit">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-lg shadow-primary/25">
+                <Heart size={18} className="text-white fill-white" />
+              </div>
+              <span className="font-bold text-base gradient-text">AI Memory Companion</span>
+            </Link>
+            <ThemeToggle size="md" />
+          </div>
 
           {/* Main quote */}
           <div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
+              transition={motionT}
             >
-              <p className="text-3xl xl:text-4xl font-black text-white leading-tight mb-6">
+              <p
+                className="text-3xl xl:text-4xl font-black leading-tight mb-6"
+                style={{ color: 'var(--text-strong)' }}
+              >
                 "Grief is the price<br />
-                we pay for <span className="gradient-text">love</span>."
+                we pay for <span className="gradient-text-warm">love</span>."
               </p>
-              <p className="text-gray-500 text-sm mb-10 leading-relaxed max-w-sm">
+              <p className="text-sm mb-10 leading-relaxed max-w-sm" style={{ color: 'var(--text-muted)' }}>
                 Welcome back. Your memories, your healing journey, and your loved ones are waiting for you.
               </p>
 
@@ -68,9 +99,15 @@ const Login = () => {
                   { icon: Heart,    label: 'Emotionally intelligent responses' },
                   { icon: Sparkles, label: 'Personalized healing journeys' },
                 ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-3 text-sm text-gray-400">
-                    <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon size={14} className="text-primary" />
+                  <div key={label} className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+                    <div
+                      className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: 'color-mix(in srgb, var(--color-primary) 12%, transparent)',
+                        color: 'var(--color-primary)',
+                      }}
+                    >
+                      <Icon size={14} />
                     </div>
                     {label}
                   </div>
@@ -80,18 +117,29 @@ const Login = () => {
           </div>
 
           {/* Testimonial */}
-          <div className="glass-card rounded-2xl border border-white/8 p-5">
-            <div className="flex gap-1 mb-3 text-amber-400">
-              {[...Array(5)].map((_, i) => <Star key={i} size={12} className="fill-current" />)}
+          <div
+            className="glass-card rounded-2xl p-5"
+            style={{ border: '1px solid var(--border-soft)' }}
+          >
+            <div className="flex gap-1 mb-3">
+              {[...Array(5)].map((_, i) => <Star key={i} size={12} className="fill-current" style={{ color: 'var(--color-accent-amber)', fill: 'var(--color-accent-amber)' }} />)}
             </div>
-            <p className="text-gray-400 text-sm italic leading-relaxed mb-3">
+            <p className="text-sm italic leading-relaxed mb-3" style={{ color: 'var(--text-muted)' }}>
               "AI Memory Companion helped me process grief in ways I never thought possible. It's like having a compassionate friend available 24/7."
             </p>
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/30 flex items-center justify-center text-xs font-bold text-primary">A</div>
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-primary) 30%, transparent)',
+                  color: 'var(--color-primary)',
+                }}
+              >
+                A
+              </div>
               <div>
-                <p className="text-xs font-semibold text-white">Amara N.</p>
-                <p className="text-[11px] text-gray-600">Healing for 6 months</p>
+                <p className="text-xs font-semibold" style={{ color: 'var(--text-strong)' }}>Amara N.</p>
+                <p className="text-[11px]" style={{ color: 'var(--text-subtle)' }}>Healing for 6 months</p>
               </div>
             </div>
           </div>
@@ -101,33 +149,53 @@ const Login = () => {
       {/* ── RIGHT PANEL ── */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative overflow-y-auto">
         {/* Background glow */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
+        <div
+          className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle at center, color-mix(in srgb, var(--color-primary) 14%, transparent) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+          }}
+        />
 
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={reducedMotion ? { duration: 0.01 } : { duration: 0.5 }}
           className="w-full max-w-md relative z-10 py-8"
         >
-          {/* Mobile Logo */}
-          <Link to="/" className="lg:hidden flex items-center gap-2.5 mb-8 w-fit">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center">
-              <Heart size={16} className="text-white fill-white" />
-            </div>
-            <span className="font-bold gradient-text">AI Memory Companion</span>
-          </Link>
+          {/* Mobile Logo + theme toggle */}
+          <div className="lg:hidden flex items-center justify-between mb-8">
+            <Link to="/" className="flex items-center gap-2.5 w-fit">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-indigo flex items-center justify-center shadow-md shadow-primary/20">
+                <Heart size={16} className="text-white fill-white" />
+              </div>
+              <span className="font-bold gradient-text">AI Memory Companion</span>
+            </Link>
+            <ThemeToggle size="sm" />
+          </div>
 
           <div className="mb-10">
-            <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">Welcome back</h1>
-            <p className="text-gray-500 text-sm sm:text-base">Continue your journey of healing and remembrance.</p>
+            <h1 className="text-2xl sm:text-3xl font-black mb-2" style={{ color: 'var(--text-strong)' }}>
+              Welcome back
+            </h1>
+            <p className="text-sm sm:text-base" style={{ color: 'var(--text-muted)' }}>
+              Continue your journey of healing and remembrance.
+            </p>
           </div>
 
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              className="bg-red-500/8 border border-red-500/20 text-red-400 text-sm p-4 rounded-2xl mb-6 flex items-center gap-3"
+              transition={reducedMotion ? { duration: 0.01 } : { duration: 0.25 }}
+              className="text-sm p-4 rounded-2xl mb-6 flex items-center gap-3"
+              style={{
+                background: 'color-mix(in srgb, #ef4444 8%, transparent)',
+                border: '1px solid color-mix(in srgb, #ef4444 20%, transparent)',
+                color: 'color-mix(in srgb, #e14b4b 40%, var(--text-strong) 60%)',
+              }}
             >
-              <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: '#ef4444' }} />
               {error}
             </motion.div>
           )}
@@ -157,7 +225,10 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-gray-500 hover:text-white transition-colors"
+                  className="transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-strong)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -165,14 +236,22 @@ const Login = () => {
             />
 
             <div className="flex justify-end">
-              <a href="#" className="text-xs sm:text-sm text-primary hover:text-primary-light transition-colors">Forgot password?</a>
+              <a
+                href="#"
+                className="text-xs sm:text-sm transition-colors"
+                style={{ color: 'var(--color-primary)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-light)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
+              >
+                Forgot password?
+              </a>
             </div>
 
             <Button
               type="submit"
               size="lg"
               loading={loading}
-              className="w-full shadow-lg shadow-primary/20"
+              className="w-full shadow-lg shadow-primary/15"
             >
               {!loading && (
                 <>Sign In <ArrowRight size={18} /></>
@@ -180,17 +259,24 @@ const Login = () => {
             </Button>
           </form>
 
-          <p className="text-center mt-8 text-sm text-gray-500">
+          <p className="text-center mt-8 text-sm" style={{ color: 'var(--text-muted)' }}>
             New here?{' '}
-            <Link to="/signup" className="text-primary font-semibold hover:text-primary-light transition-colors">
+            <Link
+              to="/signup"
+              className="font-semibold transition-colors"
+              style={{ color: 'var(--color-primary)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-light)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
+            >
               Create an account
             </Link>
           </p>
 
-          <p className="text-center mt-6 text-[11px] text-gray-700 max-w-xs mx-auto">
+          <p className="text-center mt-6 text-[11px] max-w-xs mx-auto" style={{ color: 'var(--text-muted)' }}>
             By signing in, you agree to our{' '}
-            <a href="#" className="underline hover:text-gray-500">Terms</a> and{' '}
-            <a href="#" className="underline hover:text-gray-500">Privacy Policy</a>.
+            <a href="#" className="underline hover:opacity-80" style={{ color: 'var(--text-strong)' }}>Terms</a>
+            {' '}and{' '}
+            <a href="#" className="underline hover:opacity-80" style={{ color: 'var(--text-strong)' }}>Privacy Policy</a>.
           </p>
         </motion.div>
       </div>
