@@ -137,7 +137,7 @@ Benefits:
 ## AI & Voice
 
 * Groq API
-* llama-3.1-8b-instant
+* openai/gpt-oss-120b
 * ElevenLabs Voice AI
 * Male AI Voice
 * Female AI Voice

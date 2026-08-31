@@ -21,14 +21,13 @@ async function getAIResponse(prompt) {
     try {
       console.log('[Groq] Request sent:', prompt.slice(0, 100));
 
-      // NOTE: llama-3.1-8b-instant is used globally. For Hindi/Hinglish conversations specifically,
-      // consider switching to 'llama-3.3-70b-versatile' — the larger model has far better Hindi
-      // grammar (gender agreement, case markers, verb conjugation) and produces noticeably fewer
-      // slips like "mere pyara dost" vs correct "mera pyara dost". English conversations can stay
-      // on 8b-instant for speed/cost savings.
+      // NOTE: openai/gpt-oss-120b is used globally (replaces the retired llama-3.1-8b-instant).
+      // This is a drop-in replacement on Groq's chat completions API with the same request/response
+      // shape. It also has stronger Hindi/Hinglish grammar than the old 8b model.
+      // For a lighter/faster option closer to the old 8b tier, try 'openai/gpt-oss-20b'.
 
       const response = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 500,
