@@ -40,12 +40,12 @@ const Button = ({
     ].join(' '),
 
     secondary: [
-      'bg-slate-900/8 hover:bg-slate-900/14 text-slate-800',
-      'dark:bg-white/8 dark:hover:bg-white/12 dark:text-white',
-      'border border-slate-900/18 hover:border-slate-900/30',
-      'dark:border-white/12 dark:hover:border-white/28',
+      'bg-[rgba(0,0,0,0.08)] hover:bg-[rgba(0,0,0,0.14)] text-[#3a3540]',
+      'dark:bg-[rgba(255,255,255,0.08)] dark:hover:bg-[rgba(255,255,255,0.14)] dark:text-white',
+      'border border-[rgba(0,0,0,0.20)] hover:border-[rgba(0,0,0,0.32)]',
+      'dark:border-[rgba(255,255,255,0.14)] dark:hover:border-[rgba(255,255,255,0.28)]',
       'backdrop-blur-md',
-      'hover:shadow-lg hover:shadow-slate-900/10 dark:hover:shadow-black/20',
+      'hover:shadow-lg',
     ].join(' '),
 
     outline: [
