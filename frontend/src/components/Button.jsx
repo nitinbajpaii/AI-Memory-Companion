@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Button = ({
   children,
@@ -12,7 +13,11 @@ const Button = ({
   disabled  = false,
   loading   = false,
   icon      = null,
+  style: styleProp = {},
 }) => {
+  const { theme } = useTheme();
+  const dark = theme === 'dark';
+
   const base = [
     'inline-flex items-center justify-center gap-2',
     'font-semibold rounded-2xl',
@@ -39,14 +44,8 @@ const Button = ({
       'border border-primary/20',
     ].join(' '),
 
-    secondary: [
-      'bg-[rgba(0,0,0,0.08)] hover:bg-[rgba(0,0,0,0.14)] text-[#3a3540]',
-      'dark:bg-[rgba(255,255,255,0.08)] dark:hover:bg-[rgba(255,255,255,0.14)] dark:text-white',
-      'border border-[rgba(0,0,0,0.20)] hover:border-[rgba(0,0,0,0.32)]',
-      'dark:border-[rgba(255,255,255,0.14)] dark:hover:border-[rgba(255,255,255,0.28)]',
-      'backdrop-blur-md',
-      'hover:shadow-lg',
-    ].join(' '),
+    /* secondary uses inline styles — see secondaryStyle below */
+    secondary: 'backdrop-blur-md hover:shadow-lg transition-all',
 
     outline: [
       'bg-transparent border-2 border-primary/60 text-primary',
@@ -72,6 +71,15 @@ const Button = ({
     ].join(' '),
   };
 
+  /* Inline styles for secondary — bypasses Tailwind JIT scanning entirely */
+  const secondaryStyle = variant === 'secondary'
+    ? {
+        background: dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)',
+        border:     dark ? '1.5px solid rgba(255,255,255,0.20)' : '1.5px solid rgba(0,0,0,0.25)',
+        color:      dark ? 'rgba(255,255,255,0.90)' : '#3a3540',
+      }
+    : {};
+
   return (
     <motion.button
       type={type}
@@ -81,6 +89,7 @@ const Button = ({
       whileTap={!disabled && !loading ? { scale: 0.96 } : {}}
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
       className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
+      style={{ ...secondaryStyle, ...styleProp }}
     >
       {loading ? (
         <Loader2 size={16} className="animate-spin" />
