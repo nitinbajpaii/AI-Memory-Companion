@@ -30,10 +30,10 @@ const ThemeToggle = ({ size = 'md', className = '' }) => {
       className={`
         relative overflow-hidden ${sizing}
         rounded-xl
-        bg-white/5 hover:bg-white/10
-        dark:bg-white/5 dark:hover:bg-white/10
-        border border-slate-900/8 hover:border-slate-900/15
-        dark:border-white/8 dark:hover:border-white/15
+        bg-slate-900/6 hover:bg-slate-900/10
+        dark:bg-white/8 dark:hover:bg-white/14
+        border border-slate-900/12 hover:border-slate-900/22
+        dark:border-white/10 dark:hover:border-white/20
         text-slate-600 hover:text-slate-800
         dark:text-gray-400 dark:hover:text-white
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60

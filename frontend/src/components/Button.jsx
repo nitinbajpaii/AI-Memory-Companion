@@ -40,10 +40,10 @@ const Button = ({
     ].join(' '),
 
     secondary: [
-      'bg-slate-900/5 hover:bg-slate-900/10 text-slate-900',
-      'dark:bg-white/6 dark:hover:bg-white/10 dark:text-white',
-      'border border-slate-900/10 hover:border-slate-900/20',
-      'dark:border-white/10 dark:hover:border-white/25',
+      'bg-slate-900/8 hover:bg-slate-900/14 text-slate-800',
+      'dark:bg-white/8 dark:hover:bg-white/12 dark:text-white',
+      'border border-slate-900/18 hover:border-slate-900/30',
+      'dark:border-white/12 dark:hover:border-white/28',
       'backdrop-blur-md',
       'hover:shadow-lg hover:shadow-slate-900/10 dark:hover:shadow-black/20',
     ].join(' '),

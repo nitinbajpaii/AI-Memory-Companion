@@ -128,8 +128,8 @@
 
     /* ── Accent UI ── */
     --ai-presence:      rgba(159, 122, 234, 0.22); /* violet "someone is here" glow */
-    --ai-bubble-bg:     rgba(159, 122, 234, 0.10);
-    --ai-bubble-border: rgba(159, 122, 234, 0.22);
+    --ai-bubble-bg:     rgba(159, 122, 234, 0.14);
+    --ai-bubble-border: rgba(159, 122, 234, 0.28);
     --user-bubble-bg:   linear-gradient(135deg, #9f7aea 0%, #7c3aed 100%);
     --user-bubble-text: #ffffff;
 
