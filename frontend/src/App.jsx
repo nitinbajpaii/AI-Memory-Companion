@@ -9,6 +9,7 @@ const Login             = lazy(() => import('./pages/Login'));
 const Signup            = lazy(() => import('./pages/Signup'));
 const About             = lazy(() => import('./pages/About'));
 const Contact           = lazy(() => import('./pages/Contact'));
+const PrivacyPolicy     = lazy(() => import('./pages/PrivacyPolicy'));
 const Dashboard         = lazy(() => import('./pages/Dashboard'));
 const Chat              = lazy(() => import('./pages/Chat'));
 const MemoryManagement  = lazy(() => import('./pages/MemoryManagement'));
@@ -100,8 +101,9 @@ const AppRoutes = () => {
             } />
             <Route path="/login"   element={<PublicRoute><PageTransition><Login /></PageTransition></PublicRoute>} />
             <Route path="/signup"  element={<PublicRoute><PageTransition><Signup /></PageTransition></PublicRoute>} />
-            <Route path="/about"   element={<PageTransition><About /></PageTransition>} />
-            <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+            <Route path="/about"          element={<PageTransition><About /></PageTransition>} />
+            <Route path="/contact"        element={<PageTransition><Contact /></PageTransition>} />
+            <Route path="/privacy-policy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
 
             {/* Protected routes */}
             <Route path="/dashboard" element={

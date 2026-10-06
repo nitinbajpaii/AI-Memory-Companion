@@ -17,7 +17,7 @@ const footerNav = {
     { label: 'Careers',  to: '#' },
   ],
   Legal: [
-    { label: 'Privacy Policy', to: '#' },
+    { label: 'Privacy Policy', to: '/privacy-policy' },
     { label: 'Terms of Use',   to: '#' },
     { label: 'Cookie Policy',  to: '#' },
     { label: 'GDPR',           to: '#' },
@@ -136,17 +136,34 @@ const Footer = () => {
             <span>© {new Date().getFullYear()} AI Memory Companion. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-5">
-            {['Privacy', 'Terms', 'Cookies'].map((t) => (
-              <a
-                key={t}
-                href="#"
-                className="transition-colors"
-                style={{ color: 'var(--text-muted)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-strong)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
-              >
-                {t}
-              </a>
+            {[
+              { label: 'Privacy', to: '/privacy-policy' },
+              { label: 'Terms',   to: '#' },
+              { label: 'Cookies', to: '#' },
+            ].map(({ label, to }) => (
+              to.startsWith('/') ? (
+                <Link
+                  key={label}
+                  to={to}
+                  className="transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-strong)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
+                >
+                  {label}
+                </Link>
+              ) : (
+                <a
+                  key={label}
+                  href={to}
+                  className="transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-strong)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
+                >
+                  {label}
+                </a>
+              )
             ))}
           </div>
         </div>
